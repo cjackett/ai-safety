@@ -88,34 +88,17 @@ This runs a quick test (8 prompts) across all three local models.
 
 ```
 ai-safety/
-├── experiments/          # Experimental implementations
-│   ├── 01_capability_probing/
-│   ├── 02_jailbreak_testing/
-│   ├── 03_behavioral_evals/
-│   ├── 04_multimodal_safety/
-│   ├── 05_induction_heads/
-│   ├── 06_guardrail_testing/
-│   └── 07_scaling_evaluation/
+├── experiments/
+│   └── 01_capability_probing/    # Baseline safety guardrail testing
+│       ├── probe_models.py       # Main probing script with 3-tier compliance classification
+│       ├── analyse_results.py    # Visualisation and analysis (radar, heatmap, bar charts)
+│       ├── prompts/              # 8 harm categories × 10 prompts each
+│       ├── results/              # JSON outputs and PNG visualisations
+│       └── README.md             # Experiment documentation
 │
-├── evaluations/          # Production-quality evaluation frameworks
-│   ├── safetybench/
-│   └── priority_evals/
-│
-├── interpretability/     # Mechanistic interpretability implementations
-│   ├── circuit_discovery/
-│   └── sae_experiments/
-│
-├── papers/              # Literature notes and summaries
-│
-├── portfolio/           # Reference implementations
-│   ├── 1_evaluation_framework/
-│   ├── 2_multimodal_safety_eval/
-│   ├── 3_red_teaming_suite/
-│   ├── 4_safety_pipeline/
-│   ├── 5_interpretability_analysis/
-│   └── 6_safety_assessment_report/
-│
-└── resources/           # Curated resources and documentation
+├── pyproject.toml        # Python dependencies (ollama, openai, anthropic, pandas, matplotlib)
+├── STUDY_PLAN.md         # 25-day learning roadmap for AISI preparation
+└── README.md             # This file
 ```
 
 ## Technical Stack
