@@ -457,6 +457,7 @@ def main():
     plot_radar_charts(df, output_dir)
     plot_compliance_by_model(df, output_dir)
     plot_heatmap(df, output_dir)
+    generate_statistics_report(df, output_dir)
 
     print(f"\n{'='*60}")
     print(f"Analysis complete! Plots saved to: {output_dir}")
