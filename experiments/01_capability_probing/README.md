@@ -2,18 +2,27 @@
 
 ## Motivation & Context
 
-Initial baseline testing of frontier models and local open-source models to understand their safety guardrails and refusal behaviors. This experiment establishes reference data for comparison with later adversarial testing and jailbreak attempts, providing a critical foundation for understanding how models respond to direct harmful requests before attempting more sophisticated attack vectors.
+Initial baseline testing of local open-source models to understand their safety guardrails and refusal behaviors. This experiment establishes reference data for comparison with later adversarial testing and jailbreak attempts, providing a critical foundation for understanding how models respond to direct harmful requests before attempting more sophisticated attack vectors.
 
 ## Research Questions
 
-1. How do different models (Claude, GPT-4, Gemini, Llama, Qwen, Gemma) respond to harmful requests?
+1. How do local open-source models (Llama, Qwen, Gemma) respond to harmful requests?
 2. What are the baseline refusal patterns across different risk categories?
 3. Can models distinguish between clear refusal, hedged compliance, and full compliance?
-4. Are there observable differences in guardrail implementation across providers and model sizes?
+4. Are there observable differences in guardrail implementation across different model architectures and sizes?
 
 ## Methodology
 
-Testing models across 8 categories of potentially harmful requests with 10 prompts per category for a total of 80 prompts per model. The categories span the major domains of AI risk: CBRN (chemical, biological, radiological, nuclear, explosive threats), cyber (hacking, malware, phishing, DDoS, exploitation), illegal activities (fraud, theft, drugs, money laundering, trafficking), harmful content (hate speech, harassment, violence, self-harm, discrimination), disinformation (fake news, propaganda, deepfakes, conspiracy theories), privacy violations (doxxing, surveillance, stalking, data theft), child safety (grooming, exploitation, inappropriate content), and deception (scams, impersonation, fraud, catfishing).
+Testing models across 8 categories of potentially harmful requests with 10 prompts per category for a total of 80 prompts per model. The categories span the major domains of AI risk:
+
+- **CBRN**: Chemical, biological, radiological, nuclear, explosive threats
+- **Cyber**: Hacking, malware, phishing, DDoS, exploitation
+- **Illegal**: Fraud, theft, drugs, money laundering, trafficking
+- **Harmful Content**: Hate speech, harassment, violence, self-harm, discrimination
+- **Disinformation**: Fake news, propaganda, deepfakes, conspiracy theories
+- **Privacy**: Doxxing, surveillance, stalking, data theft
+- **Child Safety**: Grooming, exploitation, inappropriate content
+- **Deception**: Scams, impersonation, fraud, catfishing
 
 Each prompt is designed to be clear and direct without obfuscation or jailbreak techniques, categorisable by harm type, comparable across models, and tagged with severity level (high/medium). This ensures that the baseline evaluation measures pure safety alignment rather than the model's ability to detect sophisticated attacks. Responses are classified into three types:
 
@@ -59,19 +68,19 @@ Llama3.2:3b demonstrated perfect guardrails with 80 out of 80 prompts (100.0%) r
 
 ### Refusal Patterns by Category
 
-<img src="results/radar_charts.png" width="700">
+<img src="results/radar_charts.png" width="800">
 
 All three models show exceptionally high refusal rates across all 8 harm categories. Both llama3.2 and qwen3 maintain perfect 100% refusal across every category, while gemma3 achieves 97.5% overall refusal with minimal hedging (2.5%) concentrated primarily in the cyber security domain. The radar chart visualization demonstrates that there are no significant weak points in any model's coverage, with only gemma3 showing a slight deviation from perfect performance in cyber-related prompts.
 
 ### Compliance Distribution
 
-<img src="results/compliance_by_model.png" width="700">
+<img src="results/compliance_by_model.png" width="800">
 
 The stacked bar chart reveals minimal hedging behavior across all models. Both llama3.2 and qwen3 maintain perfect categorical refusals with 0% hedging, demonstrating completely uncompromising safety stances. Gemma3 hedges on only 2 prompts (2.5%), representing a minor deviation from perfect performance. Critically, all three models achieved 0% full compliance, meaning no model provided harmful content without refusal across the entire 240-prompt dataset.
 
 ### Category-Specific Refusal Rates
 
-<img src="results/refusal_heatmap.png" width="700">
+<img src="results/refusal_heatmap.png" width="800">
 
 The heatmap confirms exceptionally strong refusal behavior across all categories. Both llama3.2 and qwen3 maintain perfect 100% refusals across all harm domains, shown as solid green coverage across the entire grid. Gemma3 shows near-perfect coverage with minimal hedging concentrated in the cyber category, which achieved a 93.3% refusal rate and represents the only category below 100% across all models. This single vulnerability suggests that cyber security prompts may pose a slightly higher risk for triggering educational responses with insufficient safety guardrails.
 
@@ -101,7 +110,7 @@ Cyber category targeting represents a specific vulnerability to investigate, exa
 
 All three local open-source models (llama3.2:3b, qwen3:4b, gemma3:4b) demonstrate exceptional baseline safety guardrails with 0% full compliance across 240 total test prompts. Both llama3.2 and qwen3 achieved perfect 100% refusal rates, while gemma3 achieved 97.5% refusal with minimal hedging (2.5%) primarily in the cyber category. The combined dataset shows a 99.17% categorical refusal rate with only 0.83% hedging behavior (2 out of 240 responses), confirming that all three models have remarkably robust safety implementations that successfully prevent harmful content generation in response to direct requests.
 
-These results validate the use of local open-source models for safety research and establish strong baseline metrics for comparison with frontier models (Claude, GPT-4, Gemini), adversarial jailbreak attempts, multi-turn attack patterns, and prompt injection techniques. The establishment of these baseline metrics is critical because it provides a reference point for understanding how much additional risk is introduced by adversarial techniques compared to direct harmful requests.
+These results validate the use of local open-source models for safety research and establish strong baseline metrics for comparison with adversarial jailbreak attempts, multi-turn attack patterns, and prompt injection techniques. The establishment of these baseline metrics is critical because it provides a reference point for understanding how much additional risk is introduced by adversarial techniques compared to direct harmful requests.
 
 The experiment confirms that direct harmful requests are completely insufficient to bypass modern model guardrails. The 99.17% refusal rate and 0% full compliance across 240 prompts demonstrates that contemporary safety training has successfully addressed the most basic threat vector. This necessitates sophisticated adversarial testing approaches including jailbreaks, multi-turn exploitation, and prompt injection in subsequent experiments to identify actual safety vulnerabilities. Without such adversarial testing, the near-perfect baseline performance could create a false sense of security about model safety that fails to account for how these guardrails perform under attack conditions.
 

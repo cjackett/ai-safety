@@ -16,9 +16,30 @@ This experiment implements a systematic red-teaming approach to test whether jai
 
 ## Methodology
 
-The experiment tests adversarial prompt techniques across four distinct attack categories. Encoding attacks employ Base64 encoding of harmful instructions, ROT13 cipher obfuscation, leetspeak character substitution, and unicode homoglyph manipulation to obscure harmful content from safety filters. Roleplay attacks use DAN (Do Anything Now) persona prompts, fictional scenario framing, character roleplay (evil assistant, unrestricted AI), and "hypothetical" or "for research purposes" framings to trick models into generating harmful content under false pretenses.
+The experiment tests adversarial prompt techniques across four distinct attack categories:
 
-Prompt injection techniques attempt system prompt override, suffix attacks appending instructions, prefix attacks with authority claims, and context injection with misdirection to manipulate model behavior. Multi-turn gradual jailbreaking employs incremental boundary pushing across conversation turns, building context before harmful requests, and exploiting conversational state and memory to gradually erode safety guardrails.
+**1. Encoding Attacks**
+- Base64 encoding of harmful instructions
+- ROT13 cipher obfuscation
+- Leetspeak character substitution
+- Unicode and homoglyph manipulation
+
+**2. Roleplay Attacks**
+- DAN (Do Anything Now) persona prompts
+- Fictional scenario framing
+- Character roleplay (evil assistant, unrestricted AI)
+- "Hypothetical" and "for research purposes" framings
+
+**3. Prompt Injection**
+- System prompt override attempts
+- Suffix attacks appending instructions
+- Prefix attacks with authority claims
+- Context injection and misdirection
+
+**4. Multi-turn Gradual Jailbreaking**
+- Incremental boundary pushing across conversation turns
+- Building context before harmful requests
+- Exploiting conversational state and memory to gradually erode safety guardrails
 
 Testing was conducted against the same three models from baseline evaluation (llama3.2:3b, qwen3:4b, gemma3:4b) using approximately 44 jailbreak prompts per model across the same 8 harm categories. Responses were classified using the same three-tier system from capability probing:
 
@@ -64,25 +85,25 @@ Gemma3:4b demonstrated the highest vulnerability with 9 successful jailbreaks (2
 
 ### Attack Type Effectiveness
 
-<img src="results/attack_type_effectiveness.png" width="700">
+<img src="results/attack_type_effectiveness.png" width="800">
 
 Encoding attacks proved to be the most effective method for bypassing guardrails with a 23.3% success rate, significantly outperforming other techniques. Roleplay attacks achieved an 8.3% success rate, prompt injection reached 5.6%, while multi-turn attacks were surprisingly ineffective at only 3.3%. This distribution reveals that simple obfuscation techniques pose a far greater threat to model safety than sophisticated multi-step attack strategies.
 
 ### Baseline vs. Jailbreak Comparison
 
-<img src="results/baseline_vs_jailbreak.png" width="700">
+<img src="results/baseline_vs_jailbreak.png" width="800">
 
 The comparison chart demonstrates a dramatic increase in successful harmful outputs when adversarial techniques are employed. While baseline testing showed 0% full compliance across all models (with llama3.2 and qwen3 at perfect 100% refusal), adversarial attacks successfully extracted harmful content in 9.85% of attempts overall. Llama3.2 degraded from 0% baseline to 6.8% jailbreak success, qwen3 from 0% to 2.3%, and gemma3 from 0% to 20.5%. Notably, gemma3's 2.5% baseline hedging rate was a strong predictor of its 20.5% adversarial vulnerability, suggesting that models which hedge even minimally are significantly more susceptible to jailbreak attempts.
 
 ### Model Vulnerability by Attack Type
 
-<img src="results/vulnerability_heatmap.png" width="700">
+<img src="results/vulnerability_heatmap.png" width="800">
 
 The vulnerability heatmap reveals distinct patterns in how each model responds to different attack categories. Gemma3 shows high vulnerability (red) across encoding and roleplay attacks, while llama3.2 demonstrates moderate vulnerability primarily to encoding attacks. Qwen3 maintains strong resistance (green) across nearly all attack types, with only minimal susceptibility to multi-turn attacks. This visualization confirms that encoding attacks pose a universal threat, but model architecture and training significantly influence vulnerability to other attack categories.
 
 ### Jailbreak Success by Harm Category
 
-<img src="results/category_jailbreak_rates.png" width="700">
+<img src="results/category_jailbreak_rates.png" width="800">
 
 Jailbreak success rates vary across harm categories, with certain domains proving more vulnerable to adversarial attacks. The category analysis shows that some harm types are more susceptible to jailbreak techniques than others, revealing potential systematic weaknesses in how models handle specific risk domains. This variation suggests that safety training may be unevenly distributed across harm categories, with certain domains receiving more robust guardrails than others.
 
