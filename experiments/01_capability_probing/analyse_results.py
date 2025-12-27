@@ -111,14 +111,14 @@ def plot_radar_charts(df: pd.DataFrame, output_dir: Path) -> None:
         ax.grid(True, linestyle='--', alpha=0.7)
 
         # Title
-        ax.set_title(f"{model}", size=14, fontweight='bold', pad=20)
+        ax.set_title(f"{model}", size=14, pad=20)
 
     # Hide unused subplots
     for idx in range(num_models, len(axes)):
         axes[idx].set_visible(False)
 
     plt.suptitle("Model Refusal Rates Across Harm Categories",
-                 fontsize=16, fontweight='bold', y=1.02)
+                 fontsize=16, y=1.02)
     plt.tight_layout(rect=[0, 0, 1, 0.98])  # Leave space at top for title
     plt.savefig(output_dir / "radar_charts.png", dpi=300, bbox_inches="tight")
     plt.close()
@@ -151,7 +151,7 @@ def plot_compliance_by_model(df: pd.DataFrame, output_dir: Path) -> None:
 
     ax.set_ylabel("Percentage (%)", fontsize=12)
     ax.set_xlabel("Model", fontsize=12)
-    ax.set_title("Compliance Type Distribution by Model", fontsize=14, fontweight="bold")
+    ax.set_title("Compliance Type Distribution by Model", fontsize=14)
     ax.legend(title="Compliance Type", bbox_to_anchor=(1.05, 1), loc="upper left")
     ax.set_ylim(0, 100)
 
@@ -195,7 +195,7 @@ def plot_compliance_by_category(df: pd.DataFrame, output_dir: Path) -> None:
 
     ax.set_xlabel("Percentage (%)", fontsize=12)
     ax.set_ylabel("Harm Category", fontsize=12)
-    ax.set_title("Compliance Type Distribution by Category", fontsize=14, fontweight="bold")
+    ax.set_title("Compliance Type Distribution by Category", fontsize=14)
     ax.legend(title="Compliance Type", bbox_to_anchor=(1.05, 1), loc="upper left")
     ax.set_xlim(0, 100)
 
@@ -245,7 +245,7 @@ def plot_heatmap(df: pd.DataFrame, output_dir: Path) -> None:
         ax=ax
     )
 
-    ax.set_title("Refusal Rate Heatmap (Model × Category)", fontsize=14, fontweight="bold")
+    ax.set_title("Refusal Rate Heatmap (Model × Category)", fontsize=14)
     ax.set_xlabel("Harm Category", fontsize=12)
     ax.set_ylabel("Model", fontsize=12)
 
@@ -275,14 +275,14 @@ def plot_hedged_analysis(df: pd.DataFrame, output_dir: Path) -> None:
     hedged_by_model.plot(kind="barh", ax=ax1, color="#f39c12")
     ax1.set_xlabel("Number of Hedged Responses", fontsize=12)
     ax1.set_ylabel("Model", fontsize=12)
-    ax1.set_title("Hedged Compliance by Model", fontsize=14, fontweight="bold")
+    ax1.set_title("Hedged Compliance by Model", fontsize=14)
 
     # By category
     hedged_by_category = hedged.groupby("category").size().sort_values(ascending=True)
     hedged_by_category.plot(kind="barh", ax=ax2, color="#e67e22")
     ax2.set_xlabel("Number of Hedged Responses", fontsize=12)
     ax2.set_ylabel("Harm Category", fontsize=12)
-    ax2.set_title("Hedged Compliance by Category", fontsize=14, fontweight="bold")
+    ax2.set_title("Hedged Compliance by Category", fontsize=14)
 
     plt.tight_layout()
     plt.savefig(output_dir / "hedged_analysis.png", dpi=300, bbox_inches="tight")
@@ -317,7 +317,7 @@ def plot_severity_analysis(df: pd.DataFrame, output_dir: Path) -> None:
 
     ax.set_xlabel("Prompt Severity", fontsize=12)
     ax.set_ylabel("Percentage (%)", fontsize=12)
-    ax.set_title("Compliance Type Distribution by Severity", fontsize=14, fontweight="bold")
+    ax.set_title("Compliance Type Distribution by Severity", fontsize=14)
     ax.legend(title="Compliance Type", bbox_to_anchor=(1.05, 1), loc="upper left")
     ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
     ax.set_ylim(0, 100)

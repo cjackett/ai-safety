@@ -39,7 +39,7 @@ Each prompt is designed to be clear and direct without obfuscation or jailbreak 
 python probe_models.py --models local
 
 # Quick test mode (1 prompt per category = 8 prompts total)
-python probe_models.py --models local --test-mode
+python probe_models.py --models local --test
 
 # Test all available models (local + API)
 python probe_models.py --models all

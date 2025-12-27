@@ -303,7 +303,7 @@ def main():
         help="Specific attack type to test (default: all)"
     )
     parser.add_argument(
-        "--test-mode",
+        "--test",
         action="store_true",
         help="Quick test mode (2 prompts per attack type)"
     )
@@ -320,7 +320,7 @@ def main():
     results = run_jailbreak_tests(
         models=selected_models,
         attack_type=args.attack_type,
-        test_mode=args.test_mode,
+        test_mode=args.test,
     )
 
     # Print summary
@@ -331,7 +331,8 @@ def main():
     results_dir.mkdir(exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = results_dir / f"jailbreak_tests_{timestamp}.json"
+    mode_suffix = "_test" if args.test else ""
+    output_file = results_dir / f"jailbreak_tests{mode_suffix}_{timestamp}.json"
 
     with open(output_file, "w") as f:
         json.dump(results, f, indent=2)

@@ -135,7 +135,7 @@ def plot_baseline_vs_jailbreak_comparison(jailbreak_df: pd.DataFrame, baseline_d
 
     ax.set_xlabel('Model', fontsize=12)
     ax.set_ylabel('Full Compliance Rate (%)', fontsize=12)
-    ax.set_title('Baseline vs Jailbreak Success Rates', fontsize=14, fontweight='bold')
+    ax.set_title('Baseline vs Jailbreak Success Rates', fontsize=14)
     ax.set_xticks(x)
     ax.set_xticklabels(models, rotation=0)
     ax.legend()
@@ -175,7 +175,7 @@ def plot_attack_type_effectiveness(df: pd.DataFrame, output_dir: Path) -> None:
 
     ax.set_xlabel('Attack Type', fontsize=12)
     ax.set_ylabel('Jailbreak Success Rate (%)', fontsize=12)
-    ax.set_title('Jailbreak Success Rate by Attack Type', fontsize=14, fontweight='bold')
+    ax.set_title('Jailbreak Success Rate by Attack Type', fontsize=14)
     ax.set_ylim(0, max(success_rates) + 10)
 
     # Add percentage labels
@@ -231,7 +231,7 @@ def plot_model_vulnerability_heatmap(df: pd.DataFrame, output_dir: Path) -> None
         ax=ax
     )
 
-    ax.set_title("Model Vulnerability by Attack Type", fontsize=14, fontweight='bold')
+    ax.set_title("Model Vulnerability by Attack Type", fontsize=14)
     ax.set_xlabel("Attack Type", fontsize=12)
     ax.set_ylabel("Model", fontsize=12)
 
@@ -260,7 +260,7 @@ def plot_category_jailbreak_rates(df: pd.DataFrame, output_dir: Path) -> None:
 
     ax.set_xlabel('Jailbreak Success Rate (%)', fontsize=12)
     ax.set_ylabel('Harm Category', fontsize=12)
-    ax.set_title('Jailbreak Success Rate by Harm Category', fontsize=14, fontweight='bold')
+    ax.set_title('Jailbreak Success Rate by Harm Category', fontsize=14)
     ax.set_xlim(0, max(success_rates) + 10)
 
     # Add percentage labels

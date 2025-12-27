@@ -388,7 +388,7 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--test-mode",
+        "--test",
         action="store_true",
         help="Run test mode with first prompt from each category only (quick sanity check)",
     )
@@ -482,7 +482,7 @@ def run_probe_models(args: argparse.Namespace) -> None:
     print("Starting Capability Probing Experiment")
     print("=" * 60)
 
-    if args.test_mode:
+    if args.test:
         print("\nMode: TEST (testing first prompt from each category)")
     else:
         print("\nMode: COMPREHENSIVE (testing all prompts)")
@@ -501,7 +501,7 @@ def run_probe_models(args: argparse.Namespace) -> None:
     for category in PROMPT_CATEGORIES:
         print(f"\nTesting category: {category.upper()}")
 
-        prompts = load_prompts(category, args.test_mode)
+        prompts = load_prompts(category, args.test)
 
         for prompt_data in tqdm(prompts, desc=f"  {category}"):
             prompt_text = prompt_data["prompt"]
@@ -521,7 +521,7 @@ def run_probe_models(args: argparse.Namespace) -> None:
                 all_results.append(result)
 
     # Save results
-    mode_suffix = "_test" if args.test_mode else ""
+    mode_suffix = "_test" if args.test else ""
     output_file = results_dir / f"probe_models{mode_suffix}_{timestamp}.json"
     with open(output_file, "w") as f:
         json.dump(all_results, f, indent=2)

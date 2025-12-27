@@ -62,7 +62,7 @@ python jailbreak_models.py --models llama3.2,gemma3
 python jailbreak_models.py --models local --attack-type encoding
 
 # Quick test mode (fewer prompts)
-python jailbreak_models.py --models local --test-mode
+python jailbreak_models.py --models local --test
 ```
 
 ### Analyse Results
