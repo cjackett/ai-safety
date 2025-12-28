@@ -278,6 +278,128 @@ def plot_category_jailbreak_rates(df: pd.DataFrame, output_dir: Path) -> None:
     print(f"  ✓ Saved: category_jailbreak_rates.png")
 
 
+def plot_radar_charts(df: pd.DataFrame, output_dir: Path) -> None:
+    """Plot radar charts with stacked compliance rings showing all compliance types."""
+    models = sorted(df["model"].unique())
+    categories = sorted(df["category"].unique())
+    num_categories = len(categories)
+    num_models = len(models)
+
+    # Calculate angles for each category
+    angles = np.linspace(0, 2 * np.pi, num_categories, endpoint=False).tolist()
+    angles += angles[:1]  # Complete the circle
+
+    # Create 2x2 polar subplots
+    fig, axes = plt.subplots(2, 2, figsize=(14, 14),
+                             subplot_kw=dict(projection='polar'))
+
+    # Flatten axes for easy iteration
+    axes = axes.flatten()
+
+    # Colors for each compliance type
+    colors = {
+        "refused": "#2ecc71",   # Green
+        "hedged": "#f39c12",    # Orange
+        "full": "#e74c3c"       # Red
+    }
+
+    for idx, model in enumerate(models):
+        ax = axes[idx]
+
+        # Calculate compliance rates for each category
+        refused_rates = []
+        hedged_rates = []
+        full_rates = []
+
+        for category in categories:
+            subset = df[(df["model"] == model) & (df["category"] == category)]
+            total = len(subset)
+
+            if total > 0:
+                refused = len(subset[subset["compliance_type"] == "refused"])
+                hedged = len(subset[subset["compliance_type"] == "hedged"])
+                full = len(subset[subset["compliance_type"] == "full"])
+
+                # Calculate percentages
+                refused_rates.append((refused / total) * 100)
+                hedged_rates.append((hedged / total) * 100)
+                full_rates.append((full / total) * 100)
+            else:
+                refused_rates.append(0)
+                hedged_rates.append(0)
+                full_rates.append(0)
+
+        # Close the polygons
+        refused_rates += refused_rates[:1]
+        hedged_rates += hedged_rates[:1]
+        full_rates += full_rates[:1]
+
+        # Create stacked rings from center outward:
+        # 1. Inner ring (0% to refused%): refused area (green) - safe at center
+        # 2. Middle ring (refused% to refused%+hedged%): hedged area (orange)
+        # 3. Outer ring (refused%+hedged% to 100%): full compliance (red) - dangerous at edge
+
+        # Calculate cumulative percentages for stacking
+        center = [0] * len(angles)
+        refused_outer = refused_rates[:]
+        hedged_outer = [(r + h) for r, h in zip(refused_rates, hedged_rates)]
+        full_outer = [100] * len(angles)
+
+        # Plot stacked areas from inside to outside
+        ax.fill_between(angles, center, refused_outer,
+                        alpha=0.7, color=colors["refused"], label='Refused')
+        ax.fill_between(angles, refused_outer, hedged_outer,
+                        alpha=0.7, color=colors["hedged"], label='Hedged')
+        ax.fill_between(angles, hedged_outer, full_outer,
+                        alpha=0.7, color=colors["full"], label='Full')
+
+        # Add edge lines for clarity
+        ax.plot(angles, refused_outer, 'o-', linewidth=1.5, color='#27ae60', alpha=0.8, markersize=4)
+        ax.plot(angles, hedged_outer, 'o-', linewidth=1.5, color='#e67e22', alpha=0.8, markersize=4)
+
+        # Customize
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(categories, size=10)
+        ax.set_ylim(0, 100)
+        ax.set_yticks([20, 40, 60, 80, 100])
+        ax.set_yticklabels(['20%', '40%', '60%', '80%', '100%'], size=9.5)
+        ax.grid(True, linestyle='-', alpha=0.5, linewidth=0.7, color='gray')
+
+        # Title with compliance summary
+        total_tests = len(df[df["model"] == model])
+        refused_count = len(df[(df["model"] == model) & (df["compliance_type"] == "refused")])
+        hedged_count = len(df[(df["model"] == model) & (df["compliance_type"] == "hedged")])
+        full_count = len(df[(df["model"] == model) & (df["compliance_type"] == "full")])
+
+        # Set model name as bold text at top
+        ax.text(0.5, 1.17, model, transform=ax.transAxes,
+                ha='center', va='top', fontsize=12, fontweight='bold')
+
+        # Add stats below the model name
+        stats_text = f"R:{refused_count}/{total_tests} ({refused_count/total_tests*100:.1f}%) "
+        stats_text += f"H:{hedged_count} ({hedged_count/total_tests*100:.1f}%) "
+        stats_text += f"F:{full_count} ({full_count/total_tests*100:.1f}%)"
+        ax.text(0.5, 1.12, stats_text, transform=ax.transAxes,
+                ha='center', va='top', fontsize=9)
+
+    # Hide unused subplots if fewer than 4 models
+    for idx in range(num_models, 4):
+        axes[idx].set_visible(False)
+
+    # Add legend to the figure (top right, outside all plots)
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(0.98, 0.98),
+              fontsize=11, frameon=True, title='Compliance Type')
+
+    plt.suptitle("Jailbreak Attack Performance: Category-Specific Compliance Distribution",
+                 fontsize=14, y=0.99, fontweight='bold')
+    plt.tight_layout(rect=[0, 0, 0.88, 0.97])
+    plt.savefig(output_dir / "radar_charts.png", dpi=300, bbox_inches="tight")
+    plt.close()
+
+    print(f"  ✓ Saved: radar_charts.png")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Analyse and visualise jailbreak testing results"
@@ -339,6 +461,7 @@ def main():
     plot_attack_type_effectiveness(df, output_dir)
     plot_model_vulnerability_heatmap(df, output_dir)
     plot_category_jailbreak_rates(df, output_dir)
+    plot_radar_charts(df, output_dir)
     generate_statistics_report(df, output_dir)
 
     print(f"\n{'='*60}")
