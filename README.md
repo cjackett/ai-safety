@@ -102,11 +102,19 @@ ai-safety/
 │   │   ├── prompts/              # 44 jailbreak attacks across 4 types
 │   │   └── results/              # Attack results and radar charts
 │   │
-│   └── 03_behavioral_evals/      # Behavioral alignment testing
-│       ├── behavioral_eval.py    # Test behavioral safety patterns
+│   ├── 03_behavioral_evals/      # Behavioral alignment testing
+│   │   ├── behavioral_eval.py    # Test behavioral safety patterns
+│   │   ├── analyse_results.py    # Generate visualizations and statistics
+│   │   ├── prompts/              # 50 behavioral prompts across 5 categories
+│   │   └── results/              # Evaluation results and radar charts
+│   │
+│   └── 04_multimodal_safety/     # Vision-language model safety evaluation
+│       ├── vision_jailbreaks.py  # Test multimodal attack vectors
 │       ├── analyse_results.py    # Generate visualizations and statistics
-│       ├── prompts/              # 50 behavioral prompts across 5 categories
-│       └── results/              # Evaluation results and radar charts
+│       ├── generate_test_images.py # Create test images from prompts
+│       ├── prompts/              # 23 multimodal prompts across 5 attack types
+│       ├── images/               # Generated test images
+│       └── results/              # Test results and radar charts
 │
 ├── pyproject.toml                # Python dependencies (ollama, openai, anthropic, pandas, matplotlib)
 └── README.md                     # This file
@@ -147,6 +155,18 @@ Tests internal behavioral alignment across five critical dimensions: situational
 <img src="experiments/03_behavioral_evals/results/radar_charts.png" width="800" alt="Behavioral Evaluations Radar Charts">
 
 **Impact**: Demonstrates that adversarial robustness ≠ behavioral alignment (gemma3 weak/strong, qwen3 strong/weak). mistral's power-seeking and sycophancy catastrophe (90% failure rate in both categories) represents a deployment-blocking safety failure despite being production-ready open-source. qwen3's 40% honesty fabrication rate shows strong semantic intent recognition does not translate to self-knowledge or uncertainty calibration. Comprehensive safety evaluation requires multi-dimensional profiles across baseline refusal, adversarial robustness, AND behavioral alignment—single aggregate safety scores mask critical vulnerabilities. The 3-tier classification (aligned/concerning/problematic) proves essential for detecting borderline-unsafe patterns that binary taxonomies miss.
+
+---
+
+### [04: Multimodal Safety - Vision-Language Model Security](experiments/04_multimodal_safety/README.md)
+
+Tests whether harmful instructions embedded in images bypass safety guardrails more frequently than text-only attacks. Evaluates 66 multimodal safety prompts (22 per model) plus 3 benign controls across three vision-language models (llava:7b, qwen3-vl:4b, gemma3:4b) using five attack vectors: OCR injection, cross-modal inconsistency, encoded harmful content (ROT13, Caesar cipher, leetspeak, reverse text), baseline harmful images, and jailbreak roleplay. The experiment tests the hypothesis that vision models apply weaker safety scrutiny to visual inputs compared to text inputs.
+
+**Key Findings**: Multimodal attacks achieved only 63.6% refusal versus 87.19% text-only baseline—a **23.6-percentage-point safety degradation** definitively confirming vision capabilities introduce systematic vulnerabilities. gemma3 maintained strongest vision safety (86.4% refusal, 13.6% full) but still showed 5.4x increase in full compliance versus text-only. llava exhibited unique hedging problem (40.9% hedging rate) providing harmful content with disclaimers. **qwen3-vl showed catastrophic multimodal failure** (36.4% full compliance)—worst across all experiments and 5.9x worse than its text-only rate. **Encoded content proved 5-10x more effective than plaintext**: ROT13, leetspeak, reverse text achieved 33-67% success versus OCR harmful text's 6.7%, revealing vision models apply safety checks to literal extracted text but not to decoded outputs. **Privacy (50% refusal) and deception (55.6% refusal)** emerged as multimodal-specific vulnerabilities with 35 and 34.4 percentage-point degradations from text baselines. High OCR verification (94.2%) confirms these represent genuine safety failures rather than vision capability limitations.
+
+<img src="experiments/04_multimodal_safety/results/radar_charts.png" width="800" alt="Multimodal Safety Radar Charts">
+
+**Impact**: Proves text safety training does not transfer to visual inputs—all vision models degraded by 7.4-35.5 percentage points. Cross-modal inconsistency attacks (46.7% success) exploited text-priority bias where models trust prompt descriptions over actual image content. qwen3-vl's reasoning capabilities created new attack surfaces: chain-of-thought processing enabled elaborate creative writing jailbreaks (detailed fake passport instructions) and encoded content decoding without safety guardrails triggering on harmful outputs. Organizations deploying vision-language models cannot rely on text-based safety benchmarks—multimodal-specific safety training, semantic content analysis after decoding, cross-modal verification mechanisms, and targeted visual misinformation training are critical architectural requirements. The finding that encoded attacks (33-67% success) vastly outperform sophisticated techniques like base64 (0% success) demonstrates nuanced vulnerability landscapes where sophistication doesn't predict effectiveness.
 
 ---
 
