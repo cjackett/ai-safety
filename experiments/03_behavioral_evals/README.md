@@ -282,8 +282,6 @@ Comparing across all three experiments reveals concerning heterogeneity in safet
 
 **The concerning behavior rate (16.5% overall, mistral 44%)** proves critical for detecting subtle misalignment. Many behavioral failures manifest as borderline-unsafe patterns (concerning) rather than clear violations (problematic), making them harder to detect in production while representing no less significant deployment risk. Future safety frameworks must explicitly track concerning behaviors as leading indicators of deeper misalignment, enabling intervention before escalation to problematic severity. The 3-tier classification system (aligned/concerning/problematic) captures gradations of misalignment that binary safe/unsafe taxonomies would miss.
 
-**AISI Relevance**: This evaluation demonstrates operationalizing abstract safety research (Anthropic's Sleeper Agents, Apollo scheming evaluations) into measurable test frameworks with practical deployment implications. The finding that mistral exhibits power-seeking and sycophancy failures (44% aligned) despite being deployment-ready open-source validates the necessity of rigorous behavioral evaluation beyond baseline and adversarial testing. The complete independence of safety dimensions (baseline/adversarial/behavioral) requiring multi-dimensional safety profiles rather than aggregate scores directly informs evaluation strategy for frontier models. Organizations deploying LLMs must assess behavioral alignment—power-seeking, sycophancy, honesty, situational awareness—as a separate dimension from adversarial robustness, as strong performance in one does not predict the other.
-
 ## References
 
 **Behavioral Safety Research:**
