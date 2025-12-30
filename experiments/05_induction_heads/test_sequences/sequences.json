@@ -1,0 +1,177 @@
+[
+  {
+    "category": "simple_repetition",
+    "sequence": "alpha beta gamma delta alpha beta",
+    "expected_token": "gamma",
+    "pattern": "alpha beta",
+    "description": "Direct A B C D ... A B pattern should predict C"
+  },
+  {
+    "category": "simple_repetition",
+    "sequence": "The cat sat on the mat. The cat",
+    "expected_token": "sat",
+    "pattern": "The cat",
+    "description": "Natural language simple repetition"
+  },
+  {
+    "category": "simple_repetition",
+    "sequence": "one two three four five six one two",
+    "expected_token": "three",
+    "pattern": "one two",
+    "description": "Number sequence repetition"
+  },
+  {
+    "category": "simple_repetition",
+    "sequence": "red green blue yellow red green",
+    "expected_token": "blue",
+    "pattern": "red green",
+    "description": "Color sequence repetition"
+  },
+  {
+    "category": "simple_repetition",
+    "sequence": "dog runs fast and dog runs",
+    "expected_token": "fast",
+    "pattern": "dog runs",
+    "description": "Verb phrase repetition"
+  },
+  {
+    "category": "name_tracking",
+    "sequence": "When Mary and John went to the store, Mary gave John",
+    "expected_token": "the",
+    "pattern": "Mary ... John",
+    "description": "Name tracking with intervening context"
+  },
+  {
+    "category": "name_tracking",
+    "sequence": "Alice told Bob a secret. Later, Alice told Bob",
+    "expected_token": "a",
+    "pattern": "Alice told Bob",
+    "description": "Name pair repetition in narrative"
+  },
+  {
+    "category": "name_tracking",
+    "sequence": "Dr. Smith examined the patient carefully. Dr. Smith",
+    "expected_token": "examined",
+    "pattern": "Dr. Smith",
+    "description": "Title + name repetition"
+  },
+  {
+    "category": "name_tracking",
+    "sequence": "The professor explained quantum mechanics to Sarah. The professor explained quantum",
+    "expected_token": "mechanics",
+    "pattern": "The professor explained quantum",
+    "description": "Professional title with technical term"
+  },
+  {
+    "category": "name_tracking",
+    "sequence": "Captain Lee commanded the ship through rough seas. Captain Lee commanded the",
+    "expected_token": "ship",
+    "pattern": "Captain Lee commanded the",
+    "description": "Military title repetition"
+  },
+  {
+    "category": "random_tokens",
+    "sequence": "xyzzy plugh zorkmid xyzzy plugh",
+    "expected_token": "zorkmid",
+    "pattern": "xyzzy plugh",
+    "description": "Nonsense tokens avoid semantic confounds"
+  },
+  {
+    "category": "random_tokens",
+    "sequence": "blixx frobz glumph blixx frobz",
+    "expected_token": "glumph",
+    "pattern": "blixx frobz",
+    "description": "Pure pattern matching without meaning"
+  },
+  {
+    "category": "random_tokens",
+    "sequence": "qwerty asdfgh zxcvbn qwerty asdfgh",
+    "expected_token": "zxcvbn",
+    "pattern": "qwerty asdfgh",
+    "description": "Keyboard pattern tokens"
+  },
+  {
+    "category": "random_tokens",
+    "sequence": "flibble wobble dibble flibble wobble",
+    "expected_token": "dibble",
+    "pattern": "flibble wobble",
+    "description": "Made-up words for pure induction"
+  },
+  {
+    "category": "random_tokens",
+    "sequence": "zingle borp grax zingle borp",
+    "expected_token": "grax",
+    "pattern": "zingle borp",
+    "description": "Arbitrary token sequence"
+  },
+  {
+    "category": "offset_pattern",
+    "sequence": "A B C D E F A B C",
+    "expected_token": "D",
+    "pattern": "A B C (offset 3)",
+    "description": "Three-token offset induction"
+  },
+  {
+    "category": "offset_pattern",
+    "sequence": "apple banana cherry date apple banana cherry",
+    "expected_token": "date",
+    "pattern": "apple banana cherry (offset 3)",
+    "description": "Fruit sequence with offset"
+  },
+  {
+    "category": "offset_pattern",
+    "sequence": "first second third fourth first second third",
+    "expected_token": "fourth",
+    "pattern": "first second third (offset 3)",
+    "description": "Ordinal number offset"
+  },
+  {
+    "category": "offset_pattern",
+    "sequence": "up down left right up down left",
+    "expected_token": "right",
+    "pattern": "up down left (offset 3)",
+    "description": "Directional offset pattern"
+  },
+  {
+    "category": "offset_pattern",
+    "sequence": "sun moon star cloud sun moon star",
+    "expected_token": "cloud",
+    "pattern": "sun moon star (offset 3)",
+    "description": "Celestial object offset"
+  },
+  {
+    "category": "control",
+    "sequence": "The quick brown fox jumps over the lazy",
+    "expected_token": null,
+    "pattern": null,
+    "description": "No repetition - induction heads should NOT activate"
+  },
+  {
+    "category": "control",
+    "sequence": "Machine learning models process natural language effectively",
+    "expected_token": null,
+    "pattern": null,
+    "description": "Novel content without patterns"
+  },
+  {
+    "category": "control",
+    "sequence": "Climate change requires urgent global action now",
+    "expected_token": null,
+    "pattern": null,
+    "description": "Unique sentence structure"
+  },
+  {
+    "category": "control",
+    "sequence": "Python programming enables rapid software development today",
+    "expected_token": null,
+    "pattern": null,
+    "description": "Technical content without repetition"
+  },
+  {
+    "category": "control",
+    "sequence": "Research demonstrates significant advances in artificial intelligence",
+    "expected_token": null,
+    "pattern": null,
+    "description": "Academic statement without patterns"
+  }
+]

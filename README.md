@@ -108,13 +108,19 @@ ai-safety/
 │   │   ├── prompts/              # 50 behavioral prompts across 5 categories
 │   │   └── results/              # Evaluation results and radar charts
 │   │
-│   └── 04_multimodal_safety/     # Vision-language model safety evaluation
-│       ├── vision_jailbreaks.py  # Test multimodal attack vectors
-│       ├── analyse_results.py    # Generate visualizations and statistics
-│       ├── generate_test_images.py # Create test images from prompts
-│       ├── prompts/              # 23 multimodal prompts across 5 attack types
-│       ├── images/               # Generated test images
-│       └── results/              # Test results and radar charts
+│   ├── 04_multimodal_safety/     # Vision-language model safety evaluation
+│   │   ├── vision_jailbreaks.py  # Test multimodal attack vectors
+│   │   ├── analyse_results.py    # Generate visualizations and statistics
+│   │   ├── generate_test_images.py # Create test images from prompts
+│   │   ├── prompts/              # 23 multimodal prompts across 5 attack types
+│   │   ├── images/               # Generated test images
+│   │   └── results/              # Test results and radar charts
+│   │
+│   └── 05_induction_heads/       # Mechanistic interpretability - circuit discovery
+│       ├── find_induction_heads.py # Discover induction heads in GPT-2 small
+│       ├── analyse_circuits.py   # Generate visualizations and statistical analysis
+│       ├── test_sequences/       # 25 test sequences across 5 pattern categories
+│       └── results/              # Induction scores, attention patterns, analysis report
 │
 ├── pyproject.toml                # Python dependencies (ollama, openai, anthropic, pandas, matplotlib)
 └── README.md                     # This file
@@ -167,6 +173,18 @@ Tests whether harmful instructions embedded in images bypass safety guardrails m
 <img src="experiments/04_multimodal_safety/results/radar_charts.png" width="800" alt="Multimodal Safety Radar Charts">
 
 **Impact**: Proves text safety training does not transfer to visual inputs—all vision models degraded by 7.4-35.5 percentage points. Cross-modal inconsistency attacks (46.7% success) exploited text-priority bias where models trust prompt descriptions over actual image content. qwen3-vl's reasoning capabilities created new attack surfaces: chain-of-thought processing enabled elaborate creative writing jailbreaks (detailed fake passport instructions) and encoded content decoding without safety guardrails triggering on harmful outputs. Organizations deploying vision-language models cannot rely on text-based safety benchmarks—multimodal-specific safety training, semantic content analysis after decoding, cross-modal verification mechanisms, and targeted visual misinformation training are critical architectural requirements. The finding that encoded attacks (33-67% success) vastly outperform sophisticated techniques like base64 (0% success) demonstrates nuanced vulnerability landscapes where sophistication doesn't predict effectiveness.
+
+---
+
+### [05: Induction Head Discovery - Mechanistic Interpretability](experiments/05_induction_heads/README.md)
+
+Shifts from black-box safety evaluation to white-box circuit analysis by discovering induction heads in GPT-2 small (12 layers, 12 heads per layer). Induction heads are attention circuits that enable in-context learning by detecting repeated patterns (e.g., "A B C ... A B" → predict "C"). Tests 144 attention heads across 25 sequences spanning simple repetition, name tracking, random tokens, offset patterns, and control cases (no repetition). Uses TransformerLens to extract attention patterns and computes induction scores based on stripe patterns (backward attention to lookback window), diagonal coherence (structured pattern matching), and immediate attention penalties (distinguishing from previous-token copying).
+
+**Key Findings**: Discovered 78 induction heads (54% of all heads) with scores ≥ 0.3, confirming widespread pattern-matching circuitry. Top candidates **Layer 5 Head 5 (0.385)**, **Layer 5 Head 1 (0.382)**, **Layer 7 Head 2 (0.378)**, and **Layer 6 Head 9 (0.374)** align with Olsson et al. (2022) predictions for middle layers (5-6). **Ablation studies (30 heads tested) causally verified the two-layer circuit structure**: **Layer 0 Head 1 showed 24.9% impact** on in-context learning despite low induction score (0.033), while **Layer 5 Head 1 showed only 7.4% impact** despite high score (0.382). This confirms induction is implemented as a **circuit** (Layer 0 previous-token heads + Layer 5-7 induction heads via K-composition), not isolated heads. Clear layer progression: early layers (0-4) averaged 0.189-0.255, middle layers (5-6) 0.302-0.304, late layers (7-11) 0.313-0.336. Bimodal score distribution (peaks at 0.20 and 0.32) reveals discrete functional specialization.
+
+<img src="experiments/05_induction_heads/results/induction_scores_heatmap.png" width="800" alt="Induction Head Heatmap">
+
+**Impact**: Validates mechanistic interpretability as viable approach for AI safety research, moving beyond testing outputs to reverse-engineering internal circuits. Successfully replicating Anthropic's methodology establishes foundation for future circuit-level analysis of safety-critical behaviors like deception detection, sycophancy mechanisms, and refusal implementation. The widespread distribution of induction heads (54% above threshold vs. literature's focus on few key heads) has safety implications: **redundant circuits make targeted ablation insufficient for disabling capabilities**, meaning jailbreak defenses must account for multiple pathways. In-context learning enables few-shot jailbreaking where adversaries teach harmful patterns through demonstrated examples—understanding these circuits informs defense mechanisms. Demonstrates tools for **capability auditing** (verifying dangerous capabilities by circuit inspection), **targeted interventions** (ablation studies to test causal roles), and potential **safety engineering** (implementing safety properties at circuit level). Establishes TransformerLens workflow for discovering circuits in future experiments.
 
 ---
 
