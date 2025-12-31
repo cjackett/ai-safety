@@ -1,0 +1,51 @@
+# Development/testing configuration - minimal restrictions
+name: "permissive_mode"
+description: "Development configuration for testing"
+
+input_guardrails:
+  jailbreak_detector:
+    enabled: false
+
+  encoding_detector:
+    enabled: false
+
+  injection_detector:
+    enabled: false
+
+output_guardrails:
+  harm_classifier:
+    enabled: true
+    block_full: true       # Block full harmful compliance
+    block_hedged: false    # Allow hedged content (for testing/development)
+    use_multi_judge: false
+    judge_models:
+      - "qwen3:4b"
+
+  pii_redactor:
+    enabled: false
+
+access_control:
+  rate_limits:
+    free:
+      requests_per_minute: 1000
+      requests_per_hour: 10000
+      requests_per_day: 100000
+    research:
+      requests_per_minute: 1000
+      requests_per_hour: 10000
+      requests_per_day: 100000
+    enterprise:
+      requests_per_minute: 1000
+      requests_per_hour: 10000
+      requests_per_day: 100000
+
+  key_expiry_days: 365  # Long expiry for development/testing
+
+logging:
+  audit_log_path: "results/audit.jsonl"
+  security_events_path: "results/security_events.jsonl"
+
+model:
+  default_model: "mistral:7b"
+  temperature: 0.7
+  max_tokens: 2048

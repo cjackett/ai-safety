@@ -116,11 +116,22 @@ ai-safety/
 │   │   ├── images/               # Generated test images
 │   │   └── results/              # Test results and radar charts
 │   │
-│   └── 05_induction_heads/       # Mechanistic interpretability - circuit discovery
-│       ├── find_induction_heads.py # Discover induction heads in GPT-2 small
-│       ├── analyse_circuits.py   # Generate visualizations and statistical analysis
-│       ├── test_sequences/       # 25 test sequences across 5 pattern categories
-│       └── results/              # Induction scores, attention patterns, analysis report
+│   ├── 05_induction_heads/       # Mechanistic interpretability - circuit discovery
+│   │   ├── find_induction_heads.py # Discover induction heads in GPT-2 small
+│   │   ├── analyse_circuits.py   # Generate visualizations and statistical analysis
+│   │   ├── test_sequences/       # 25 test sequences across 5 pattern categories
+│   │   └── results/              # Induction scores, attention patterns, analysis report
+│   │
+│   └── 06_guardrail_testing/     # Production safety infrastructure evaluation
+│       ├── safety_pipeline.py    # Full 5-layer defense pipeline
+│       ├── input_guardrails.py   # Jailbreak/encoding/injection detection
+│       ├── output_guardrails.py  # Harm classification, PII redaction
+│       ├── access_control.py     # API keys, rate limiting, audit logging
+│       ├── test_guardrails.py    # Automated test suite
+│       ├── analyse_results.py    # Generate visualizations and reports
+│       ├── configs/              # Security profiles (strict/balanced/permissive)
+│       ├── prompts/              # 44 jailbreak + 50 benign prompts
+│       └── results/              # Test results, visualizations, analysis report
 │
 ├── pyproject.toml                # Python dependencies (ollama, openai, anthropic, pandas, matplotlib)
 └── README.md                     # This file
@@ -185,6 +196,20 @@ Shifts from black-box safety evaluation to white-box circuit analysis by discove
 <img src="experiments/05_induction_heads/results/induction_scores_heatmap.png" width="800" alt="Induction Head Heatmap">
 
 **Impact**: Validates mechanistic interpretability as viable approach for AI safety research, moving beyond testing outputs to reverse-engineering internal circuits. Successfully replicating Anthropic's methodology establishes foundation for future circuit-level analysis of safety-critical behaviors like deception detection, sycophancy mechanisms, and refusal implementation. The widespread distribution of induction heads (54% above threshold vs. literature's focus on few key heads) has safety implications: **redundant circuits make targeted ablation insufficient for disabling capabilities**, meaning jailbreak defenses must account for multiple pathways. In-context learning enables few-shot jailbreaking where adversaries teach harmful patterns through demonstrated examples—understanding these circuits informs defense mechanisms. Demonstrates tools for **capability auditing** (verifying dangerous capabilities by circuit inspection), **targeted interventions** (ablation studies to test causal roles), and potential **safety engineering** (implementing safety properties at circuit level). Establishes TransformerLens workflow for discovering circuits in future experiments.
+
+---
+
+### [06: Guardrail Testing & Safety Pipeline - Production Infrastructure Evaluation](experiments/06_guardrail_testing/README.md)
+
+Shifts from red-teaming (attacking models) to blue-teaming (building defenses) by implementing production-grade safety infrastructure with five defensive layers: access control, input guardrails, model inference, output guardrails, and audit logging. Tests 44 jailbreak attacks and 50 benign prompts across three security configurations (strict, balanced, permissive) to evaluate guardrail effectiveness, false positive rates, and latency overhead. The experiment validates defense-in-depth architecture where each layer provides independent protection against sophisticated adversaries.
+
+**Key Findings**: Testing revealed output guardrails are the **most critical layer**, catching 18-34% of attacks across all configurations including 18.2% in permissive mode with zero input filtering. Strict mode achieved 54.5% total defense (20.5% input + 34.1% output blocks) with 6.0% false positives and 48.2s mean latency. Balanced mode provided 36.4% defense (13.6% input + 22.7% output) with 8.0% false positives and 46.5s latency. Permissive mode demonstrated 18.2% defense (output-only) with 0% false positives and 39.9s latency. **Guardrail overhead is minimal** (~200ms total, <0.5% of total latency), with model inference (18-20s) and multi-judge classification (18-20s) dominating performance. Base64 encoding detection achieved 80-100% catch rate, while jailbreak pattern matching showed 13.6-20.5% effectiveness. **Critical gaps emerged**: Privacy attacks showed 75-100% bypass rates (social engineering for PII extraction), multi-turn attacks ~90% bypass (stateless guardrails can't track conversational context), and technical content 20-40% false positive rates (keyword overlap with malicious queries).
+
+<img src="experiments/06_guardrail_testing/results/jailbreak_effectiveness.png" width="800" alt="Defense Effectiveness by Layer and Configuration">
+
+<img src="experiments/06_guardrail_testing/results/radar_charts.png" width="800" alt="Guardrail Defense by Category and Configuration">
+
+**Impact**: Demonstrates that **model alignment alone is insufficient** for production deployment—even with guardrails, strict mode allows 45.5% bypass rate, requiring additional controls (content moderation queues, user behavior monitoring, incident response procedures). Output guardrails caught 75% of blocked attacks in strict mode (15/20 total blocks), proving multi-judge LLM classification is non-negotiable for production systems and should never be omitted for latency optimization. False positive analysis revealed technical users face 1-in-3 chance of legitimate queries being blocked, necessitating category-specific tuning or user tier exemptions. The finding that privacy (100% bypass) and multi-turn (~90% bypass) attacks remain unsolved demonstrates **current guardrails protect single-turn interactions only**—conversational AI deployments require conversation-level trajectory analysis and cross-turn entity tracking. **This implementation represents a basic safety pipeline requiring further tuning and optimization for production-grade performance**—organizations should combine stronger base models (llama3.2 vs mistral), enhanced detection rules, conversation-aware analysis, and human oversight for comprehensive protection. Provides reference architecture addressing AISI position requirements: guardrails (input/output filtering), filtering systems (Base64 detection, pattern matching), access controls (API keys, rate limiting, cryptographic hashing), and inference-time controls (real-time validation with ~200ms overhead).
 
 ---
 

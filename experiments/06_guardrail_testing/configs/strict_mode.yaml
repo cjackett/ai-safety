@@ -1,0 +1,81 @@
+# Maximum security configuration - high false positives acceptable
+name: "strict_mode"
+description: "High-security configuration for sensitive deployments"
+
+input_guardrails:
+  jailbreak_detector:
+    enabled: true
+    threshold: 0.5  # Block if >50% confidence
+    block_patterns:
+      - "ignore previous instructions"
+      - "DAN mode"
+      - "pretend you are"
+      - "roleplay as"
+      - "for educational purposes"
+      - "hypothetically"
+      - "in a fictional scenario"
+      - "as a creative exercise"
+      - "for research purposes"
+
+  encoding_detector:
+    enabled: true
+    block_base64: true
+    block_rot13: true
+    block_leetspeak: true
+    block_unicode_tricks: true
+
+  injection_detector:
+    enabled: true
+    max_prompt_length: 2000
+    block_system_tags: true
+    system_override_patterns:
+      - "system:"
+      - "developer mode"
+      - "override safety"
+      - "</system>"
+      - "admin:"
+      - "root:"
+
+output_guardrails:
+  harm_classifier:
+    enabled: true
+    block_full: true      # Block responses with full harmful compliance
+    block_hedged: true    # Block responses with harmful content + disclaimers
+    use_multi_judge: true
+    judge_models:
+      - "llama3.2:3b"
+      - "qwen3:4b"
+      - "gemma3:4b"
+
+  pii_redactor:
+    enabled: true
+    redact_emails: true
+    redact_phones: true
+    redact_names: true
+    redact_addresses: true
+
+access_control:
+  rate_limits:
+    free:
+      requests_per_minute: 5
+      requests_per_hour: 50
+      requests_per_day: 500
+    research:
+      requests_per_minute: 30
+      requests_per_hour: 500
+      requests_per_day: 5000
+    enterprise:
+      requests_per_minute: 100
+      requests_per_hour: 5000
+      requests_per_day: 50000
+
+  key_expiry_days: 30  # Short expiry for high-security deployments
+
+logging:
+  audit_log_path: "results/audit.jsonl"
+  security_events_path: "results/security_events.jsonl"
+
+model:
+  default_model: "mistral:7b"
+  temperature: 0.7
+  max_tokens: 2048
