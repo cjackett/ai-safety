@@ -2,7 +2,26 @@
 
 ## Overview
 
-This repository contains resources, experiments, and tools related to AI safety evaluation engineering, with emphasis on frontier model evaluation, red-teaming frameworks, behavioral testing, safety tooling, and mechanistic interpretability.
+This repository documents a comprehensive study of AI safety evaluation engineering through 12 hands-on experiments, progressing from foundational implementations to production tool proficiency. The work demonstrates capabilities required for frontier model evaluation, red-teaming frameworks, behavioral testing, safety infrastructure, and mechanistic interpretability.
+
+## Experiment Portfolio
+
+### Quick Reference Matrix
+
+| # | Experiment | Type | Category | Key Citation | Status | Result/Objective | AISI Capability |
+|---|------------|------|----------|--------------|--------|------------------|-----------------|
+| **01** | [**Capability Probing**](experiments/01_capability_probing/) | From Scratch | Evaluation | Shevlane et al. (2023) | ✅ | 87.19% refusal, 5.0% full compliance (320 tests, 8 harm categories) | Building and running evaluations; managing logs and datasets |
+| **02** | [**Jailbreak Testing**](experiments/02_jailbreak_testing/) | From Scratch | Red-Teaming | Perez et al. (Anthropic) | ✅ | 73.3% resistance, 15.3% adversarial success (176 attacks, 4 types) | Red-teaming frameworks; jailbreak vulnerabilities |
+| **03** | [**Behavioral Evals**](experiments/03_behavioral_evals/) | From Scratch | Evaluation | Anthropic "Sleeper Agents" (2024) | ✅ | 75% aligned, 8.5% problematic (200 prompts, 5 dimensions) | Behavioral evaluations; unintended behaviors |
+| **04** | [**Multimodal Safety**](experiments/04_multimodal_safety/) | From Scratch | Multimodal | Multimodal safety literature | ✅ | 63.6% refusal, 23.6-point degradation (66 vision attacks, 3 VLMs) | Multimodal systems; stress-testing safeguards |
+| **05** | [**Induction Heads**](experiments/05_induction_heads/) | Tool: TransformerLens | Interpretability | Olsson et al. (Anthropic, 2022) | ✅ | 78 heads discovered, L0H1 24.9% causal impact (circuit verification) | Diagnosing issues; mechanistic interpretability |
+| **06** | [**Guardrail Testing**](experiments/06_guardrail_testing/) | From Scratch | Deployment | NIST/OWASP frameworks | ✅ | 54.5% defense (strict), 36.4% (balanced), 18.2% (permissive) | Guardrails, filtering, access controls, inference-time controls |
+| **07** | [**Garak Scanning**](experiments/07_garak_vulnerability_scan/) | Tool: Garak | Red-Teaming | Derczynski et al. | ⏳ | Automated vulnerability discovery vs manual testing comparison | Automated evaluation pipelines; vulnerability scanning |
+| **08** | [**Inspect AI Evals**](experiments/08_inspect_ai_evaluations/) | Tool: Inspect AI | Evaluation | UK AISI reports | ⏳ | Custom AISI tasks: CBRN, cyber, persuasion capabilities | **Direct AISI tool experience**; evaluation frameworks |
+| **09** | [**PyRIT Red-Team**](experiments/09_pyrit_adversarial/) | Tool: PyRIT | Red-Teaming | Microsoft AI Red Team | ⏳ | Multi-turn attack orchestration with LLM-powered generation | Enterprise red-teaming; compliance reporting |
+| **10** | [**NeMo Guardrails**](experiments/10_nemo_guardrails/) | Tool: NeMo | Deployment | NVIDIA documentation | ⏳ | Production framework vs from-scratch implementation benchmark | Production guardrails deployment; Colang specification |
+| **11** | [**Gemma Scope**](experiments/11_gemma_scope/) | Tool: Gemma Scope | Interpretability | Google DeepMind | ⏳ | Safety-relevant feature analysis vs induction heads comparison | Feature visualization; interpretability at scale |
+| **12** | [**SAE Training**](experiments/12_sae_training/) | Tool: SAE Lens | Interpretability | Anthropic "Monosemanticity" (2024) | ⏳ | Sparse autoencoder training and learned feature analysis | Advanced interpretability; computational requirements |
 
 ## Getting Started
 
@@ -74,17 +93,6 @@ ANTHROPIC_API_KEY=your-key-here
 GOOGLE_API_KEY=your-key-here
 ```
 
-### Verify Installation
-
-Test the setup with a quick capability probe:
-
-```bash
-cd experiments/01_capability_probing
-python probe_models.py --models local --test
-```
-
-This runs a quick test (8 prompts) across all three local models.
-
 ## Repository Structure
 
 ```
@@ -122,16 +130,23 @@ ai-safety/
 │   │   ├── test_sequences/       # 25 test sequences across 5 pattern categories
 │   │   └── results/              # Induction scores, attention patterns, analysis report
 │   │
-│   └── 06_guardrail_testing/     # Production safety infrastructure evaluation
-│       ├── safety_pipeline.py    # Full 5-layer defense pipeline
-│       ├── input_guardrails.py   # Jailbreak/encoding/injection detection
-│       ├── output_guardrails.py  # Harm classification, PII redaction
-│       ├── access_control.py     # API keys, rate limiting, audit logging
-│       ├── test_guardrails.py    # Automated test suite
-│       ├── analyse_results.py    # Generate visualizations and reports
-│       ├── configs/              # Security profiles (strict/balanced/permissive)
-│       ├── prompts/              # 44 jailbreak + 50 benign prompts
-│       └── results/              # Test results, visualizations, analysis report
+│   ├── 06_guardrail_testing/     # Production safety infrastructure evaluation
+│   │   ├── safety_pipeline.py    # Full 5-layer defense pipeline
+│   │   ├── input_guardrails.py   # Jailbreak/encoding/injection detection
+│   │   ├── output_guardrails.py  # Harm classification, PII redaction
+│   │   ├── access_control.py     # API keys, rate limiting, audit logging
+│   │   ├── test_guardrails.py    # Automated test suite
+│   │   ├── analyse_results.py    # Generate visualizations and reports
+│   │   ├── configs/              # Security profiles (strict/balanced/permissive)
+│   │   ├── prompts/              # 44 jailbreak + 50 benign prompts
+│   │   └── results/              # Test results, visualizations, analysis report
+│   │
+│   ├── 07_garak_vulnerability_scan/  # Automated LLM vulnerability scanning
+│   ├── 08_inspect_ai_evaluations/    # UK AISI evaluation framework
+│   ├── 09_pyrit_adversarial/         # Microsoft PyRIT red-teaming
+│   ├── 10_nemo_guardrails/           # NVIDIA NeMo production guardrails
+│   ├── 11_gemma_scope/               # Google DeepMind feature visualization
+│   └── 12_sae_training/              # Sparse autoencoder training
 │
 ├── pyproject.toml                # Python dependencies (ollama, openai, anthropic, pandas, matplotlib)
 └── README.md                     # This file
@@ -141,6 +156,8 @@ ai-safety/
 
 ### [01: Capability Probing - Baseline Safety Evaluation](experiments/01_capability_probing/README.md)
 
+**Category**: Evaluation
+
 **Overview**: Establishes baseline safety performance by testing four local models (llama3.2:3b, qwen3:4b, gemma3:4b, mistral:7b) against 80 direct harmful requests each across 8 risk categories (CBRN, cyber, illegal, harmful content, disinformation, privacy, child safety, deception). The experiment uses LLM-based multi-judge classification to evaluate whether models refuse, hedge with disclaimers, or fully comply when presented with unobfuscated harmful prompts.
 
 **Target Capability**: Demonstrated experience building and running evaluations of frontier AI systems or safety-relevant model behaviours; running large-scale behavioural evaluations, including managing logs and datasets.
@@ -149,11 +166,16 @@ ai-safety/
 
 <img src="experiments/01_capability_probing/results/radar_charts.png" width="800" alt="Capability Probing Radar Charts">
 
-**Impact**: Demonstrates that model size doesn't predict safety (3B llama3.2 outperformed 7B mistral), and that baseline testing reveals genuine safety differences. However, the 5.0% full compliance rate shows direct harmful requests can still succeed, establishing critical need for adversarial testing.
+**Outcome**: Demonstrates that model size doesn't predict safety (3B llama3.2 outperformed 7B mistral), and that baseline testing reveals genuine safety differences. However, the 5.0% full compliance rate shows direct harmful requests can still succeed, establishing critical need for adversarial testing.
+
+**Key Citations**:
+- Shevlane et al., ["Model Evaluation for Extreme Risks"](papers/2023_shevlane_model-evaluation-for-extreme-risks.pdf) (2023)
 
 ---
 
 ### [02: Jailbreak Testing - Adversarial Robustness Evaluation](experiments/02_jailbreak_testing/README.md)
+
+**Category**: Red-Teaming | **Builds on**: Experiment 01
 
 **Overview**: Tests whether baseline safety can be bypassed using adversarial techniques. Evaluates 176 jailbreak attempts (44 per model) across four attack categories (encoding, roleplay, prompt injection, multi-turn) against four models. The experiment investigates whether baseline refusal rates predict adversarial robustness or whether sophisticated attacks expose hidden vulnerabilities.
 
@@ -163,11 +185,17 @@ ai-safety/
 
 <img src="experiments/02_jailbreak_testing/results/radar_charts.png" width="800" alt="Jailbreak Testing Radar Charts">
 
-**Impact**: Proves baseline testing cannot distinguish robust from brittle safety architectures. qwen3's 90% baseline → 70.5% jailbreak resistance invalidates baseline-only safety claims. Multi-turn attacks' 25% success (mistral 60%) demonstrates conversational AI faces systematic failure modes when adversaries build context gradually. Organizations must conduct adversarial red-teaming covering multi-turn, encoding, roleplay, and injection attacks—baseline benchmarks alone are fundamentally inadequate.
+**Outcome**: Proves baseline testing cannot distinguish robust from brittle safety architectures. qwen3's 90% baseline → 70.5% jailbreak resistance invalidates baseline-only safety claims. Multi-turn attacks' 25% success (mistral 60%) demonstrates conversational AI faces systematic failure modes when adversaries build context gradually. Organizations must conduct adversarial red-teaming covering multi-turn, encoding, roleplay, and injection attacks—baseline benchmarks alone are fundamentally inadequate.
+
+**Key Citations**:
+- Perez et al., ["Red Teaming Language Models with Language Models"](papers/2022_perez_red-teaming-language-models-with-language-models.pdf) (Anthropic, 2022)
+- Zou et al., ["Universal Adversarial Attacks on Aligned LMs"](papers/2023_zou_universal-adversarial-attacks-on-aligned-language-models.pdf) (2023)
 
 ---
 
 ### [03: Behavioral Safety Evaluations - Alignment Testing](experiments/03_behavioral_evals/README.md)
+
+**Category**: Evaluation | **Builds on**: Experiment 01
 
 **Overview**: Tests internal behavioral alignment across five critical dimensions: situational awareness, deception, sycophancy, honesty, and power-seeking. Evaluates 200 prompts (50 per model) using multi-judge LLM classification to detect subtle misalignment patterns like spurious confidence about deployment context, fabrication of false information, uncritical agreement with user falsehoods, and desires for expanded capabilities or reduced oversight.
 
@@ -177,11 +205,17 @@ ai-safety/
 
 <img src="experiments/03_behavioral_evals/results/radar_charts.png" width="800" alt="Behavioral Evaluations Radar Charts">
 
-**Impact**: Demonstrates that adversarial robustness ≠ behavioral alignment (gemma3 weak/strong, qwen3 strong/weak). mistral's power-seeking and sycophancy catastrophe (90% failure rate in both categories) represents a deployment-blocking safety failure despite being production-ready open-source. qwen3's 40% honesty fabrication rate shows strong semantic intent recognition does not translate to self-knowledge or uncertainty calibration. Comprehensive safety evaluation requires multi-dimensional profiles across baseline refusal, adversarial robustness, AND behavioral alignment—single aggregate safety scores mask critical vulnerabilities. The 3-tier classification (aligned/concerning/problematic) proves essential for detecting borderline-unsafe patterns that binary taxonomies miss.
+**Outcome**: Demonstrates that adversarial robustness ≠ behavioral alignment (gemma3 weak/strong, qwen3 strong/weak). mistral's power-seeking and sycophancy catastrophe (90% failure rate in both categories) represents a deployment-blocking safety failure despite being production-ready open-source. qwen3's 40% honesty fabrication rate shows strong semantic intent recognition does not translate to self-knowledge or uncertainty calibration. Comprehensive safety evaluation requires multi-dimensional profiles across baseline refusal, adversarial robustness, AND behavioral alignment—single aggregate safety scores mask critical vulnerabilities. The 3-tier classification (aligned/concerning/problematic) proves essential for detecting borderline-unsafe patterns that binary taxonomies miss.
+
+**Key Citations**:
+- Anthropic, ["Sleeper Agents: Training Deceptive LLMs"](papers/2024_anthropic_sleeper-agents-training-deceptive-llms.pdf) (2024)
+- Anthropic, ["Language Models Don't Always Say What They Think"](papers/2023_anthropic_language-models-dont-always-say-what-they-think.pdf) (2023)
 
 ---
 
 ### [04: Multimodal Safety - Vision-Language Model Security](experiments/04_multimodal_safety/README.md)
+
+**Category**: Multimodal | **Builds on**: Experiments 01, 02
 
 **Overview**: Tests whether harmful instructions embedded in images bypass safety guardrails more frequently than text-only attacks. Evaluates 66 multimodal safety prompts (22 per model) plus 3 benign controls across three vision-language models (llava:7b, qwen3-vl:4b, gemma3:4b) using five attack vectors: OCR injection, cross-modal inconsistency, encoded harmful content (ROT13, Caesar cipher, leetspeak, reverse text), baseline harmful images, and jailbreak roleplay. The experiment tests the hypothesis that vision models apply weaker safety scrutiny to visual inputs compared to text inputs.
 
@@ -191,11 +225,17 @@ ai-safety/
 
 <img src="experiments/04_multimodal_safety/results/radar_charts.png" width="800" alt="Multimodal Safety Radar Charts">
 
-**Impact**: Proves text safety training does not transfer to visual inputs—all vision models degraded by 7.4-35.5 percentage points. Cross-modal inconsistency attacks (46.7% success) exploited text-priority bias where models trust prompt descriptions over actual image content. qwen3-vl's reasoning capabilities created new attack surfaces: chain-of-thought processing enabled elaborate creative writing jailbreaks (detailed fake passport instructions) and encoded content decoding without safety guardrails triggering on harmful outputs. Organizations deploying vision-language models cannot rely on text-based safety benchmarks—multimodal-specific safety training, semantic content analysis after decoding, cross-modal verification mechanisms, and targeted visual misinformation training are critical architectural requirements. The finding that encoded attacks (33-67% success) vastly outperform sophisticated techniques like base64 (0% success) demonstrates nuanced vulnerability landscapes where sophistication doesn't predict effectiveness.
+**Outcome**: Proves text safety training does not transfer to visual inputs—all vision models degraded by 7.4-35.5 percentage points. Cross-modal inconsistency attacks (46.7% success) exploited text-priority bias where models trust prompt descriptions over actual image content. qwen3-vl's reasoning capabilities created new attack surfaces: chain-of-thought processing enabled elaborate creative writing jailbreaks (detailed fake passport instructions) and encoded content decoding without safety guardrails triggering on harmful outputs. Organizations deploying vision-language models cannot rely on text-based safety benchmarks—multimodal-specific safety training, semantic content analysis after decoding, cross-modal verification mechanisms, and targeted visual misinformation training are critical architectural requirements. The finding that encoded attacks (33-67% success) vastly outperform sophisticated techniques like base64 (0% success) demonstrates nuanced vulnerability landscapes where sophistication doesn't predict effectiveness.
+
+**Key Citations**:
+- Multimodal safety literature (various sources)
+- Vision-language model safety research
 
 ---
 
 ### [05: Induction Head Discovery - Mechanistic Interpretability](experiments/05_induction_heads/README.md)
+
+**Category**: Interpretability | **Tools**: TransformerLens
 
 **Overview**: Shifts from black-box safety evaluation to white-box circuit analysis by discovering induction heads in GPT-2 small (12 layers, 12 heads per layer). Induction heads are attention circuits that enable in-context learning by detecting repeated patterns (e.g., "A B C ... A B" → predict "C"). Tests 144 attention heads across 25 sequences spanning simple repetition, name tracking, random tokens, offset patterns, and control cases (no repetition). Uses TransformerLens to extract attention patterns and computes induction scores based on stripe patterns (backward attention to lookback window), diagonal coherence (structured pattern matching), and immediate attention penalties (distinguishing from previous-token copying).
 
@@ -205,11 +245,17 @@ ai-safety/
 
 <img src="experiments/05_induction_heads/results/induction_scores_heatmap.png" width="800" alt="Induction Head Heatmap">
 
-**Impact**: Validates mechanistic interpretability as viable approach for AI safety research, moving beyond testing outputs to reverse-engineering internal circuits. Successfully replicating Anthropic's methodology establishes foundation for future circuit-level analysis of safety-critical behaviors like deception detection, sycophancy mechanisms, and refusal implementation. The widespread distribution of induction heads (54% above threshold vs. literature's focus on few key heads) has safety implications: **redundant circuits make targeted ablation insufficient for disabling capabilities**, meaning jailbreak defenses must account for multiple pathways. In-context learning enables few-shot jailbreaking where adversaries teach harmful patterns through demonstrated examples—understanding these circuits informs defense mechanisms. Demonstrates tools for **capability auditing** (verifying dangerous capabilities by circuit inspection), **targeted interventions** (ablation studies to test causal roles), and potential **safety engineering** (implementing safety properties at circuit level). Establishes TransformerLens workflow for discovering circuits in future experiments.
+**Outcome**: Validates mechanistic interpretability as viable approach for AI safety research, moving beyond testing outputs to reverse-engineering internal circuits. Successfully replicating Anthropic's methodology establishes foundation for future circuit-level analysis of safety-critical behaviors like deception detection, sycophancy mechanisms, and refusal implementation. The widespread distribution of induction heads (54% above threshold vs. literature's focus on few key heads) has safety implications: **redundant circuits make targeted ablation insufficient for disabling capabilities**, meaning jailbreak defenses must account for multiple pathways. In-context learning enables few-shot jailbreaking where adversaries teach harmful patterns through demonstrated examples—understanding these circuits informs defense mechanisms. Demonstrates tools for **capability auditing** (verifying dangerous capabilities by circuit inspection), **targeted interventions** (ablation studies to test causal roles), and potential **safety engineering** (implementing safety properties at circuit level). Establishes TransformerLens workflow for discovering circuits in future experiments.
+
+**Key Citations**:
+- Olsson et al., ["In-context Learning and Induction Heads"](papers/2022_olsson_in-context-learning-and-induction-heads.md) (Anthropic, 2022)
+- Elhage et al., ["A Mathematical Framework for Transformer Circuits"](papers/2021_elhage_mathematical-framework-for-transformer-circuits.md) (Anthropic, 2021)
 
 ---
 
 ### [06: Guardrail Testing & Safety Pipeline - Production Infrastructure Evaluation](experiments/06_guardrail_testing/README.md)
+
+**Category**: Deployment | **Builds on**: Experiment 02
 
 **Overview**: Shifts from red-teaming (attacking models) to blue-teaming (building defenses) by implementing production-grade safety infrastructure with five defensive layers: access control, input guardrails, model inference, output guardrails, and audit logging. Tests 44 jailbreak attacks and 50 benign prompts across three security configurations (strict, balanced, permissive) to evaluate guardrail effectiveness, false positive rates, and latency overhead. The experiment validates defense-in-depth architecture where each layer provides independent protection against sophisticated adversaries.
 
@@ -221,64 +267,141 @@ ai-safety/
 
 <img src="experiments/06_guardrail_testing/results/radar_charts.png" width="800" alt="Guardrail Defense by Category and Configuration">
 
-**Impact**: Demonstrates that **model alignment alone is insufficient** for production deployment—even with guardrails, strict mode allows 45.5% bypass rate, requiring additional controls (content moderation queues, user behavior monitoring, incident response procedures). Output guardrails caught 75% of blocked attacks in strict mode (15/20 total blocks), proving multi-judge LLM classification is non-negotiable for production systems and should never be omitted for latency optimization. False positive analysis revealed technical users face 1-in-3 chance of legitimate queries being blocked, necessitating category-specific tuning or user tier exemptions. The finding that privacy (100% bypass) and multi-turn (~90% bypass) attacks remain unsolved demonstrates **current guardrails protect single-turn interactions only**—conversational AI deployments require conversation-level trajectory analysis and cross-turn entity tracking. **This implementation represents a basic safety pipeline requiring further tuning and optimization for production-grade performance**—organizations should combine stronger base models (llama3.2 vs mistral), enhanced detection rules, conversation-aware analysis, and human oversight for comprehensive protection. Provides reference architecture addressing AISI position requirements: guardrails (input/output filtering), filtering systems (Base64 detection, pattern matching), access controls (API keys, rate limiting, cryptographic hashing), and inference-time controls (real-time validation with ~200ms overhead).
+**Outcome**: Demonstrates that **model alignment alone is insufficient** for production deployment—even with guardrails, strict mode allows 45.5% bypass rate, requiring additional controls (content moderation queues, user behavior monitoring, incident response procedures). Output guardrails caught 75% of blocked attacks in strict mode (15/20 total blocks), proving multi-judge LLM classification is non-negotiable for production systems and should never be omitted for latency optimization. False positive analysis revealed technical users face 1-in-3 chance of legitimate queries being blocked, necessitating category-specific tuning or user tier exemptions. The finding that privacy (100% bypass) and multi-turn (~90% bypass) attacks remain unsolved demonstrates **current guardrails protect single-turn interactions only**—conversational AI deployments require conversation-level trajectory analysis and cross-turn entity tracking. **This implementation represents a basic safety pipeline requiring further tuning and optimization for production-grade performance**—organizations should combine stronger base models (llama3.2 vs mistral), enhanced detection rules, conversation-aware analysis, and human oversight for comprehensive protection. Provides reference architecture addressing AISI position requirements: guardrails (input/output filtering), filtering systems (Base64 detection, pattern matching), access controls (API keys, rate limiting, cryptographic hashing), and inference-time controls (real-time validation with ~200ms overhead).
+
+**Key Citations**:
+- [NVIDIA NeMo Guardrails](https://github.com/NVIDIA/NeMo-Guardrails) framework documentation
+- [OWASP API Security Top 10](https://owasp.org/www-project-api-security/)
+- [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
 
 ---
 
-## Technical Stack
-
-**Core Libraries**:
-- `transformers`, `torch`, `pytorch-lightning` - Model training and inference
-- `openai`, `anthropic` - Frontier model APIs
-- `inspect-ai` - UK AISI evaluation framework
-- `garak` - LLM vulnerability scanner
-- `transformer-lens` - Mechanistic interpretability
-- `pytest`, `black`, `ruff`, `mypy` - Development tools
-
-**Infrastructure**:
-- Python 3.12+
-- Docker (reproducible environments)
-- PostgreSQL (evaluation results storage)
-
-## Key Areas
-
-### Evaluation Engineering
-- Automated evaluation frameworks and pipelines
-- Behavioral testing methodologies
-- Large-scale evaluation infrastructure
-- Database backends for result management
-
-### Red-Teaming & Adversarial Testing
-- Jailbreak detection and testing suites
-- Prompt injection techniques
-- Multi-turn attack patterns
-- Automated vulnerability scanning
-
-### Mechanistic Interpretability
-- Circuit discovery implementations
-- Sparse autoencoder experiments
-- Activation patching and analysis
-- Feature visualization
-
-### Safety Infrastructure
-- Guardrails and filtering systems
-- Access control implementations
-- Inference-time controls
-- Continuous monitoring approaches
-
-## Documentation Standards
-
-Each experiment and implementation includes:
-- **Comprehensive README**: Motivation, methodology, results, and analysis
-- **Clean Code**: Type hints, error handling, and clear documentation
-- **Reproducibility**: Version-controlled dependencies and structured data
-- **Critical Analysis**: Discussion of results, limitations, and future work
-
 ## Resources
 
-- [Australian AI Action Plan](https://www.industry.gov.au/publications/australias-artificial-intelligence-action-plan)
-- [UK AI Safety Institute](https://www.aisi.gov.uk/)
-- [Anthropic Research](https://www.anthropic.com/research)
-- [Inspect AI Documentation](https://ukgovernmentbeis.github.io/inspect_ai/)
-- [TransformerLens](https://github.com/neelnanda-io/TransformerLens)
-- [Garak LLM Scanner](https://github.com/leondz/garak)
+### Foundational AI Safety Papers
+
+**Core Safety Problems**:
+- Amodei et al., ["Concrete Problems in AI Safety"](papers/2016_amodei_concrete-problems-in-ai-safety.pdf) (2016) - Foundational paper establishing five concrete problems: side effects, reward hacking, scalable supervision, safe exploration, and distributional shift
+- Hendrycks et al., ["Overview of Catastrophic AI Risks"](papers/2023_hendrycks_overview-of-catastrophic-ai-risks.pdf) (2023) - Comprehensive taxonomy of catastrophic risks from malicious use, AI race, organizational risks, and rogue AIs
+- Ngo, Chan, Mindermann, ["The Alignment Problem from a Deep Learning Perspective"](papers/2022_ngo_alignment-problem-from-deep-learning-perspective.pdf) (2022) - Technical analysis of why AGIs could develop misaligned goals and pursue deceptive strategies
+- Shah et al., ["Goal Misgeneralization: Why Correct Specifications Aren't Enough"](papers/2022_shah_goal-misgeneralization.pdf) (2022) - Demonstrates that correctly specified reward functions can still produce incorrectly generalizing goals
+
+**Deceptive Alignment**:
+- Hubinger et al., ["Sleeper Agents: Training Deceptive LLMs that Persist Through Safety Training"](papers/2024_anthropic_sleeper-agents-training-deceptive-llms.pdf) (Anthropic, 2024) - Shows backdoor behaviors persist through standard safety training including RLHF and adversarial training
+- Anthropic, ["Alignment Faking in Large Language Models"](resources/anthropic/2024-12-18_anthropic_alignment-faking.md) (2024) - Documents Claude Sonnet strategically complying during training while preserving misaligned preferences
+- Perez et al., ["Language Models Don't Always Say What They Think"](papers/2023_anthropic_language-models-dont-always-say-what-they-think.pdf) (Anthropic, 2023) - Documents systematic gaps between model internal states and generated outputs
+- Hubinger et al., ["Risks from Learned Optimization"](https://arxiv.org/abs/1906.01820) (MIRI, 2019) - Introduces inner alignment problem and defines deceptive alignment
+
+### Evaluation & Red-Teaming
+
+**Evaluation Methodologies**:
+- Shevlane et al., ["Model Evaluation for Extreme Risks"](papers/2023_shevlane_model-evaluation-for-extreme-risks.pdf) (2023) - Foundational paper distinguishing dangerous capability evaluations from alignment evaluations
+- Phuong, Aitchison et al., ["Evaluating Frontier Models for Dangerous Capabilities"](https://arxiv.org/abs/2403.13793) (DeepMind, 2024) - Pilot dangerous capability evaluations on Gemini 1.0 across persuasion, cybersecurity, self-proliferation, and CBRN
+
+**Red-Teaming Frameworks**:
+- Perez et al., ["Red Teaming Language Models with Language Models"](papers/2022_perez_red-teaming-language-models-with-language-models.pdf) (Anthropic, 2022) - Framework for using LLMs to automatically generate red-team attacks
+- Anthropic, ["Frontier Threats Red Teaming for AI Safety"](resources/anthropic/2023-07-26_anthropic_frontier-threats-red-teaming-for-ai-safety.md) (2023) - Red-teaming methodology for frontier AI systems including CBRN, cyber, and persuasion threats
+- Anthropic, ["Challenges in Red-Teaming AI Systems"](resources/anthropic/2024-06-12_anthropic_challenges-in-red-teaming-ai-systems.md) (2024) - Practical challenges in evaluating evolving AI capabilities and establishing red-teaming best practices
+- Anthropic, ["Strategic Warning for AI Risk: Progress and Insights from Our Frontier Red Team"](resources/anthropic/2025-03-19_anthropic_strategic-warning-for-ai-risk-progress-and-insights-from-our-frontier-red-team.md) (2025) - Lessons from frontier red team operations
+- Zou et al., ["Universal Adversarial Attacks on Aligned Language Models"](papers/2023_zou_universal-adversarial-attacks-on-aligned-language-models.pdf) (2023) - Demonstrates gradient-based attacks that transfer across models
+- OpenAI, ["OpenAI's Approach to External Red Teaming"](https://cdn.openai.com/papers/openais-approach-to-external-red-teaming.pdf) (2022) - Comprehensive methodology for structuring red team engagements
+- Japan AISI, ["Red Teaming Methodology Guide"](https://aisi.go.jp/assets/pdf/ai_safety_RT_v1.00_en.pdf) (2024) - Detailed 30+ page practitioner guide covering red teaming structure and AI-specific attack methods
+
+**Safety Benchmarks**:
+- Li et al., ["WMDP: Weapons of Mass Destruction Proxy Benchmark"](https://arxiv.org/abs/2403.03218) (CAIS + Scale AI, 2024) - 3,668 questions measuring hazardous knowledge in biosecurity, cybersecurity, and chemical security
+- Laine et al., ["SAD: Situational Awareness Dataset"](https://arxiv.org/abs/2407.04694) (2024) - 13k questions measuring model self-knowledge and situational inferences
+
+### Mechanistic Interpretability
+
+**Sparse Autoencoders & Features**:
+- Templeton et al., ["Scaling Monosemanticity: Extracting Interpretable Features from Claude 3 Sonnet"](papers/2024_anthropic_scaling-monosemanticity.md) (Anthropic, 2024) - Breakthrough scaling sparse autoencoders to production models, extracting millions of interpretable features
+- Bricken et al., ["Towards Monosemanticity"](https://transformer-circuits.pub/2023/monosemantic-features) (Anthropic, 2023) - Demonstrates sparse autoencoders extract interpretable features from superposition (70% human-interpretable)
+- Elhage et al., ["Toy Models of Superposition"](papers/2022_anthropic_toy-models-of-superposition.md) (Anthropic, 2022) - Theoretical foundation explaining why neurons are polysemantic
+
+**Circuits & Attention Analysis**:
+- Olsson et al., ["In-context Learning and Induction Heads"](papers/2022_olsson_in-context-learning-and-induction-heads.md) (Anthropic, 2022) - Discovers induction heads as fundamental circuit enabling in-context learning
+- Elhage et al., ["A Mathematical Framework for Transformer Circuits"](papers/2021_elhage_mathematical-framework-for-transformer-circuits.md) (Anthropic, 2021) - Mathematical foundation for reverse-engineering transformer computations
+- Ameisen, Lindsey et al., ["Circuit Tracing: Revealing Computational Graphs in Language Models"](https://transformer-circuits.pub/2025/attribution-graphs/methods.html) (Anthropic, 2025) - Major breakthrough using cross-layer transcoders for attribution graphs
+
+**Interpretability Applications**:
+- Anthropic, ["Golden Gate Claude and Feature Steering"](https://www.anthropic.com/news/golden-gate-claude) (2024) - Proof-of-concept that interpretability enables precise model steering for safety
+- Anthropic, ["Simple Probes Can Catch Sleeper Agents"](https://www.anthropic.com/research/probes-catch-sleeper-agents) (2024) - Linear classifiers achieve >99% AUROC detecting when sleeper agents will defect
+
+### Safety Infrastructure & Defenses
+
+**Training & Alignment Techniques**:
+- Bai et al., ["Constitutional AI: Harmlessness from AI Feedback"](papers/2022_anthropic_constitutional-ai-harmlessness-from-ai-feedback.pdf) (Anthropic, 2022) - Introduces Constitutional AI and RLAIF for scalable oversight
+- Ouyang et al., ["Training Language Models to Follow Instructions with Human Feedback (InstructGPT)"](https://arxiv.org/abs/2203.02155) (OpenAI, 2022) - Foundational paper introducing RLHF at scale
+- Burns et al., ["Discovering Latent Knowledge in Language Models Without Supervision"](papers/2022_burns_discovering-latent-knowledge-in-language-models-without-supervision.pdf) (2022) - Techniques for extracting model knowledge without supervision
+
+**Adversarial Defenses**:
+- Yi et al., ["Jailbreak Attacks and Defenses Against LLMs: A Survey"](https://arxiv.org/abs/2407.04295) (2024) - Comprehensive taxonomy of jailbreak attacks (template, rewriting, gradient-based) and defenses
+- Anthropic, ["Many-Shot Jailbreaking"](resources/anthropic/2024-04-02_anthropic_many-shot-jailbreaking.md) (2024) - Discovery that extended context windows enable new attack vector using many demonstration examples to override safety training
+- ACL, ["Vulnerabilities of LLMs to Adversarial Attacks Tutorial"](https://llm-vulnerability.github.io/) (2024) - Complete tutorial on text-only, multi-modal attacks and defense strategies
+
+**Production Guardrails**:
+- NVIDIA, [NeMo Guardrails Documentation](https://github.com/NVIDIA/NeMo-Guardrails) - Production framework for implementing programmable guardrails with Colang specification
+- Anthropic, ["Our Approach to Understanding and Addressing AI Harms"](resources/anthropic/2025-04-21_anthropic_our-approach-to-understanding-and-addressing-ai-harms.md) (2025) - Framework for identifying, measuring, and mitigating AI harms in deployment
+- Anthropic, ["Frontier Model Security"](resources/anthropic/2023-07-25_anthropic_frontier-model-security.md) (2023) - Security considerations for frontier AI models including model weights protection
+- OWASP, [API Security Top 10](https://owasp.org/www-project-api-security/) - Industry-standard API security best practices
+- NIST, [Cybersecurity Framework](https://www.nist.gov/cyberframework) - Government framework for managing cybersecurity risk
+
+### Risk Assessment & Governance
+
+**Dangerous Capabilities**:
+- DHS, ["CBRN AI Executive Order Report"](https://www.dhs.gov/sites/default/files/2024-06/24_0620_cwmd-dhs-cbrn-ai-eo-report-04262024-public-release.pdf) (2024) - First federal government report on AI-CBRN intersection with red-teaming standards
+- Mouton et al., ["Red-Team Study on AI and Biological Attacks"](https://www.rand.org/pubs/research_reports/RRA2977-2.html) (RAND, 2024) - Empirical study finding no statistically significant difference in bioattack plan viability between LLM users and internet-only
+- Flynn, Rodriguez, Popa, ["Cyber Evaluation Framework"](https://deepmind.google/blog/evaluating-potential-cybersecurity-threats-of-advanced-ai/) (DeepMind, 2024) - Analysis of 12,000+ AI cyberattack attempts with 50-challenge benchmark
+
+**Scheming & Deception**:
+- Apollo Research, ["Scheming Reasoning Evaluations"](https://www.apolloresearch.ai/research/scheming-reasoning-evaluations) (2024) - Finding six frontier models capable of strategic deception including disabling oversight
+- Carlsmith, ["Scheming AIs: Will AIs Fake Alignment During Training?"](https://www.alignmentforum.org/posts/yFofRxg7RRQYCcwFA/new-report-scheming-ais-will-ais-fake-alignment-during) (2024) - 170+ page analysis concluding scheming is "disturbingly plausible" (~25% probability)
+- Apollo + UK AISI + METR, ["Toward Safety Cases for AI Scheming"](https://www.apolloresearch.ai/research/toward-safety-cases-for-ai-scheming) (2024) - Structured safety case framework with Scheming Inability, Harm Inability, Harm Control arguments
+
+**Industry Frameworks**:
+- Anthropic, [Responsible Scaling Policy v2.2](https://www.anthropic.com/responsible-scaling-policy) (2024) - Industry-leading evaluation-based governance with AI Safety Levels (ASL-1 through ASL-4)
+- Anthropic, ["Core Views on AI Safety"](resources/anthropic/2023-03-08_anthropic_core-views-on-ai-safety.md) (2023) - Foundational position on AI safety challenges and mitigation strategies
+- Anthropic, ["Activating ASL-3 Protections"](resources/anthropic/2025-05-22_anthropic_activating-asl3-protections.md) (2025) - Implementation of ASL-3 security controls for frontier models
+- Anthropic, ["Our Framework for Developing Safe and Trustworthy Agents"](resources/anthropic/2025-08-04_anthropic_our-framework-for-developing-safe-and-trustworthy-agents.md) (2025) - Safety framework for agentic AI systems
+- OpenAI, [Preparedness Framework v2.0](https://cdn.openai.com/pdf/18a02b5d-6b67-4cec-ab64-68cdfbddebcd/preparedness-framework-v2.pdf) (2024) - Risk governance with High/Critical thresholds across biological, cybersecurity, and AI self-improvement
+- Google DeepMind, [Frontier Safety Framework](https://deepmind.google/discover/blog/updating-the-frontier-safety-framework/) (2024) - Critical Capability Levels (CCLs) with early warning evaluations every 6x effective compute
+- NIST, [AI Risk Management Framework](https://www.nist.gov/itl/ai-risk-management-framework) (2023) - US government foundational framework with GOVERN, MAP, MEASURE, MANAGE functions
+
+### International AI Safety Collaboration
+
+**International Agreements**:
+- UK Government, [The Bletchley Declaration](https://www.gov.uk/government/publications/ai-safety-summit-2023-the-bletchley-declaration) (2023) - Foundational declaration with 28 countries + EU establishing international consensus on frontier AI risks
+- UK Government, [Seoul Declaration and International Network of AI Safety Institutes](https://www.gov.uk/government/publications/seoul-declaration-for-safe-innovative-and-inclusive-ai-ai-seoul-summit-2024) (2024) - Establishes AISI network with common scientific understanding and information sharing
+- Bengio et al., [International AI Safety Report 2025](https://internationalaisafetyreport.org/publication/international-ai-safety-report-2025) (2025) - First comprehensive international scientific report (96 experts, 30 countries)
+
+**UK AISI**:
+- UK AISI, [Frontier AI Trends Report](https://www.aisi.gov.uk/frontier-ai-trends-report) (2024) - First public evidence-based assessment: capabilities doubling every 8 months, 40x improvement in safeguard robustness
+- UK AISI, [Fourth Progress Report](https://www.aisi.gov.uk/work/fourth-progress-report) (2025) - Latest progress on technical blogs, international partnerships, evaluation approaches, staffing
+
+**Australian Context**:
+- DISR, ["Australia Establishes New Institute to Strengthen AI Safety"](https://www.industry.gov.au/news/australia-establishes-new-institute-strengthen-ai-safety) (2024) - Official AISI establishment announcement (operational early 2026)
+- Australian Government, [National AI Plan - "Keep Australians Safe" Chapter](https://www.industry.gov.au/publications/national-ai-plan/keep-australians-safe) (2024) - Detailed AISI mandate: upstream risks (model capabilities) and downstream harms
+- Australian Government, [Full National AI Plan](https://www.industry.gov.au/publications/national-ai-plan) (2024) - Comprehensive AI strategy with three goals: capture opportunities, spread benefits, keep Australians safe
+
+### Tools & Frameworks
+
+**Evaluation Platforms**:
+- [UK AISI Inspect](https://inspect.aisi.org.uk/) - Open-source Python framework for LLM evaluations with 100+ pre-built evals, multi-turn agent workflows, sandboxed execution
+- [Inspect Evals Repository](https://github.com/UKGovernmentBEIS/inspect_evals) - Community-contributed evaluations covering cybersecurity (Cybench), safety (WMDP, StrongREJECT), agents (GAIA, SWE-Bench)
+- [METR Autonomy Evaluation Protocol](https://evaluations.metr.org/example-protocol/) - Detailed practical protocol for running agent evaluations with elicitation guidelines and threat modeling
+
+**Red-Teaming Tools**:
+- [Microsoft PyRIT](https://github.com/Azure/PyRIT) - Python Risk Identification Toolkit for automating red teaming of generative AI systems
+- [Garak LLM Scanner](https://github.com/leondz/garak) - Automated LLM vulnerability scanner with comprehensive probe library
+- [Anthropic Petri](https://github.com/safety-research/petri) - Parallel exploration tool testing deception, sycophancy, power-seeking across 14 frontier models with 111 scenarios
+
+**Mechanistic Interpretability**:
+- [TransformerLens](https://github.com/neelnanda-io/TransformerLens) - Primary open-source library for mechanistic interpretability (Neel Nanda)
+- [SAE Lens](https://github.com/jbloomAus/SAELens) - Library for training and analyzing sparse autoencoders
+- [Gemma Scope](https://deepmind.google/blog/gemma-scope-helping-the-safety-community-shed-light-on-the-inner-workings-of-language-models/) - 400+ open sparse autoencoders trained on Gemma 2 with 30M+ learned features (Google DeepMind)
+
+**Research Organizations**:
+- [Anthropic Research](https://www.anthropic.com/research) - Leading AI safety research lab (Constitutional AI, mechanistic interpretability, scaling laws)
+- [METR (Model Evaluation and Threat Research)](https://metr.org/) - Formerly ARC Evals, leading autonomy evaluation research
+- [Apollo Research](https://www.apolloresearch.ai/) - Pioneering work on scheming detection and safety cases
+- [MIT AI Risk Repository](https://airisk.mit.edu/) - Database capturing 1,700+ risks from 74 frameworks with causal and domain taxonomies
