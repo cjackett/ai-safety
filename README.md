@@ -379,9 +379,12 @@ ai-safety/
 - UK AISI, [Fourth Progress Report](https://www.aisi.gov.uk/work/fourth-progress-report) (2025) - Latest progress on technical blogs, international partnerships, evaluation approaches, staffing
 
 **Australian Context**:
-- DISR, ["Australia Establishes New Institute to Strengthen AI Safety"](https://www.industry.gov.au/news/australia-establishes-new-institute-strengthen-ai-safety) (2024) - Official AISI establishment announcement (operational early 2026)
-- Australian Government, [National AI Plan - "Keep Australians Safe" Chapter](https://www.industry.gov.au/publications/national-ai-plan/keep-australians-safe) (2024) - Detailed AISI mandate: upstream risks (model capabilities) and downstream harms
-- Australian Government, [Full National AI Plan](https://www.industry.gov.au/publications/national-ai-plan) (2024) - Comprehensive AI strategy with three goals: capture opportunities, spread benefits, keep Australians safe
+- DISR, ["Australia Establishes New Institute to Strengthen AI Safety"](https://www.industry.gov.au/news/australia-establishes-new-institute-strengthen-ai-safety) (2025) - Official AISI establishment announcement (operational early 2026)
+- Australian Government, [Full National AI Plan](https://www.industry.gov.au/publications/national-ai-plan) ([Local](resources/aisi/2025-11-28_disr_national-ai-plan.pdf)) (2025) - Comprehensive AI strategy with three goals: capture opportunities, spread benefits, keep Australians safe
+- DISR, ["Safe and Responsible AI in Australia" Interim Response](https://consult.industry.gov.au/supporting-responsible-ai) ([Local](resources/aisi/2024-01-16_disr_safe-and-responsible-ai-in-australia-interim-response.pdf)) (2024) - Government interim response outlining next steps
+- DISR, ["Safe and Responsible AI in Australia" Discussion Paper](https://consult.industry.gov.au/supporting-responsible-ai) ([Local](resources/aisi/2023-06-09_disr_safe-and-responsible-ai-in-australia-discussion-paper.pdf)) (2023) - Consultation paper proposing guardrails and risk approach
+- Australian Government, [Australia’s AI Action Plan](https://www.industry.gov.au/publications/australias-artificial-intelligence-action-plan) (2021) - Precursor policy setting Australia’s AI priorities and investment focus
+- Australian Government, [Australia’s AI Ethics Framework](https://www.industry.gov.au/publications/australias-artificial-intelligence-ethics-framework) ([Local](resources/aisi/2019-11-07_disr_australias-ai-ethics-principles.md)) (2019) - National AI ethics principles for responsible deployment
 
 ### Tools & Frameworks
 
