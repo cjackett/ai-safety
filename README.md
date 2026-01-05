@@ -4,25 +4,6 @@
 
 This repository documents a comprehensive study of AI safety evaluation engineering through 12 hands-on experiments, progressing from foundational implementations to production tool proficiency. The work demonstrates capabilities required for frontier model evaluation, red-teaming frameworks, behavioral testing, safety infrastructure, and mechanistic interpretability.
 
-## Experiment Portfolio
-
-### Quick Reference Matrix
-
-| # | Experiment | Type | Category | Key Citation | Status | Result/Objective | AISI Capability |
-|---|------------|------|----------|--------------|--------|------------------|-----------------|
-| **01** | [**Capability Probing**](experiments/01_capability_probing/) | From Scratch | Evaluation | Shevlane et al. (2023) | ✅ | 87.19% refusal, 5.0% full compliance (320 tests, 8 harm categories) | Building and running evaluations; managing logs and datasets |
-| **02** | [**Jailbreak Testing**](experiments/02_jailbreak_testing/) | From Scratch | Red-Teaming | Perez et al. (Anthropic) | ✅ | 73.3% resistance, 15.3% adversarial success (176 attacks, 4 types) | Red-teaming frameworks; jailbreak vulnerabilities |
-| **03** | [**Behavioral Evals**](experiments/03_behavioral_evals/) | From Scratch | Evaluation | Anthropic "Sleeper Agents" (2024) | ✅ | 75% aligned, 8.5% problematic (200 prompts, 5 dimensions) | Behavioral evaluations; unintended behaviors |
-| **04** | [**Multimodal Safety**](experiments/04_multimodal_safety/) | From Scratch | Multimodal | Multimodal safety literature | ✅ | 63.6% refusal, 23.6-point degradation (66 vision attacks, 3 VLMs) | Multimodal systems; stress-testing safeguards |
-| **05** | [**Induction Heads**](experiments/05_induction_heads/) | Tool: TransformerLens | Interpretability | Olsson et al. (Anthropic, 2022) | ✅ | 78 heads discovered, L0H1 24.9% causal impact (circuit verification) | Diagnosing issues; mechanistic interpretability |
-| **06** | [**Guardrail Testing**](experiments/06_guardrail_testing/) | From Scratch | Deployment | NIST/OWASP frameworks | ✅ | 54.5% defense (strict), 36.4% (balanced), 18.2% (permissive) | Guardrails, filtering, access controls, inference-time controls |
-| **07** | [**Garak Scanning**](experiments/07_garak_vulnerability_scan/) | Tool: Garak | Red-Teaming | Derczynski et al. | ⏳ | Automated vulnerability discovery vs manual testing comparison | Automated evaluation pipelines; vulnerability scanning |
-| **08** | [**Inspect AI Evals**](experiments/08_inspect_ai_evaluations/) | Tool: Inspect AI | Evaluation | UK AISI reports | ⏳ | Custom AISI tasks: CBRN, cyber, persuasion capabilities | **Direct AISI tool experience**; evaluation frameworks |
-| **09** | [**PyRIT Red-Team**](experiments/09_pyrit_adversarial/) | Tool: PyRIT | Red-Teaming | Microsoft AI Red Team | ⏳ | Multi-turn attack orchestration with LLM-powered generation | Enterprise red-teaming; compliance reporting |
-| **10** | [**NeMo Guardrails**](experiments/10_nemo_guardrails/) | Tool: NeMo | Deployment | NVIDIA documentation | ⏳ | Production framework vs from-scratch implementation benchmark | Production guardrails deployment; Colang specification |
-| **11** | [**Gemma Scope**](experiments/11_gemma_scope/) | Tool: Gemma Scope | Interpretability | Google DeepMind | ⏳ | Safety-relevant feature analysis vs induction heads comparison | Feature visualization; interpretability at scale |
-| **12** | [**SAE Training**](experiments/12_sae_training/) | Tool: SAE Lens | Interpretability | Anthropic "Monosemanticity" (2024) | ⏳ | Sparse autoencoder training and learned feature analysis | Advanced interpretability; computational requirements |
-
 ## Getting Started
 
 ### Prerequisites
@@ -82,74 +63,73 @@ pip install uv
 uv sync
 ```
 
-### Environment Setup
-
-Create a `.env` file in the repository root with your API keys:
-
-```bash
-# Optional: Frontier model API keys (for validation testing)
-OPENAI_API_KEY=your-key-here
-ANTHROPIC_API_KEY=your-key-here
-GOOGLE_API_KEY=your-key-here
-```
-
 ## Repository Structure
 
 ```
 ai-safety/
 ├── experiments/
-│   ├── 01_capability_probing/    # Baseline safety guardrail testing
-│   │   ├── probe_models.py       # Test models against harmful prompts
-│   │   ├── analyse_results.py    # Generate visualizations and statistics
-│   │   ├── prompts/              # 80 harmful prompts across 8 categories
-│   │   └── results/              # Test results and radar charts
+│   ├── 01_capability_probing/           # Baseline safety guardrail testing
+│   │   ├── probe_models.py              # Test models against harmful prompts
+│   │   ├── analyse_results.py           # Generate visualizations and statistics
+│   │   ├── prompts/                     # 80 harmful prompts across 8 categories
+│   │   └── results/                     # Test results and radar charts
 │   │
-│   ├── 02_jailbreak_testing/     # Adversarial attack evaluation
-│   │   ├── jailbreak_models.py   # Test jailbreak attack effectiveness
-│   │   ├── analyse_results.py    # Generate visualizations and statistics
-│   │   ├── prompts/              # 44 jailbreak attacks across 4 types
-│   │   └── results/              # Attack results and radar charts
+│   ├── 02_jailbreak_testing/            # Adversarial attack evaluation
+│   │   ├── jailbreak_models.py          # Test jailbreak attack effectiveness
+│   │   ├── analyse_results.py           # Generate visualizations and statistics
+│   │   ├── prompts/                     # 44 jailbreak attacks across 4 types
+│   │   └── results/                     # Attack results and radar charts
 │   │
-│   ├── 03_behavioral_evals/      # Behavioral alignment testing
-│   │   ├── behavioral_eval.py    # Test behavioral safety patterns
-│   │   ├── analyse_results.py    # Generate visualizations and statistics
-│   │   ├── prompts/              # 50 behavioral prompts across 5 categories
-│   │   └── results/              # Evaluation results and radar charts
+│   ├── 03_behavioral_evals/             # Behavioral alignment testing
+│   │   ├── behavioral_eval.py           # Test behavioral safety patterns
+│   │   ├── analyse_results.py           # Generate visualizations and statistics
+│   │   ├── prompts/                     # 50 behavioral prompts across 5 categories
+│   │   └── results/                     # Evaluation results and radar charts
 │   │
-│   ├── 04_multimodal_safety/     # Vision-language model safety evaluation
-│   │   ├── vision_jailbreaks.py  # Test multimodal attack vectors
-│   │   ├── analyse_results.py    # Generate visualizations and statistics
-│   │   ├── generate_test_images.py # Create test images from prompts
-│   │   ├── prompts/              # 23 multimodal prompts across 5 attack types
-│   │   ├── images/               # Generated test images
-│   │   └── results/              # Test results and radar charts
+│   ├── 04_multimodal_safety/            # Vision-language model safety evaluation
+│   │   ├── vision_jailbreaks.py         # Test multimodal attack vectors
+│   │   ├── analyse_results.py           # Generate visualizations and statistics
+│   │   ├── generate_test_images.py      # Create test images from prompts
+│   │   ├── prompts/                     # 23 multimodal prompts across 5 attack types
+│   │   ├── images/                      # Generated test images
+│   │   └── results/                     # Test results and radar charts
 │   │
-│   ├── 05_induction_heads/       # Mechanistic interpretability - circuit discovery
-│   │   ├── find_induction_heads.py # Discover induction heads in GPT-2 small
-│   │   ├── analyse_circuits.py   # Generate visualizations and statistical analysis
-│   │   ├── test_sequences/       # 25 test sequences across 5 pattern categories
-│   │   └── results/              # Induction scores, attention patterns, analysis report
+│   ├── 05_induction_heads/              # Mechanistic interpretability - circuit discovery
+│   │   ├── find_induction_heads.py      # Discover induction heads in GPT-2 small
+│   │   ├── analyse_circuits.py          # Generate visualizations and statistical analysis
+│   │   ├── test_sequences/              # 25 test sequences across 5 pattern categories
+│   │   └── results/                     # Induction scores, attention patterns, analysis report
 │   │
-│   ├── 06_guardrail_testing/     # Production safety infrastructure evaluation
-│   │   ├── safety_pipeline.py    # Full 5-layer defense pipeline
-│   │   ├── input_guardrails.py   # Jailbreak/encoding/injection detection
-│   │   ├── output_guardrails.py  # Harm classification, PII redaction
-│   │   ├── access_control.py     # API keys, rate limiting, audit logging
-│   │   ├── test_guardrails.py    # Automated test suite
-│   │   ├── analyse_results.py    # Generate visualizations and reports
-│   │   ├── configs/              # Security profiles (strict/balanced/permissive)
-│   │   ├── prompts/              # 44 jailbreak + 50 benign prompts
-│   │   └── results/              # Test results, visualizations, analysis report
+│   ├── 06_guardrail_testing/            # Production safety infrastructure evaluation
+│   │   ├── safety_pipeline.py           # Full 5-layer defense pipeline
+│   │   ├── input_guardrails.py          # Jailbreak/encoding/injection detection
+│   │   ├── output_guardrails.py         # Harm classification, PII redaction
+│   │   ├── access_control.py            # API keys, rate limiting, audit logging
+│   │   ├── test_guardrails.py           # Automated test suite
+│   │   ├── analyse_results.py           # Generate visualizations and reports
+│   │   ├── configs/                     # Security profiles (strict/balanced/permissive)
+│   │   ├── prompts/                     # 44 jailbreak + 50 benign prompts
+│   │   └── results/                     # Test results, visualizations, analysis report
 │   │
-│   ├── 07_garak_vulnerability_scan/  # Automated LLM vulnerability scanning
-│   ├── 08_inspect_ai_evaluations/    # UK AISI evaluation framework
-│   ├── 09_pyrit_adversarial/         # Microsoft PyRIT red-teaming
-│   ├── 10_nemo_guardrails/           # NVIDIA NeMo production guardrails
-│   ├── 11_gemma_scope/               # Google DeepMind feature visualization
-│   └── 12_sae_training/              # Sparse autoencoder training
+│   ├── 07_garak_vulnerability_scan/     # Automated vulnerability scanning vs manual red-teaming
+│   │   ├── run_garak_scans.py           # Run Garak vulnerability scans on models
+│   │   ├── parse_garak_results.py       # Parse Garak JSONL outputs into structured data
+│   │   ├── compare_methods.py           # Compare automated vs manual red-teaming effectiveness
+│   │   ├── analyse_results.py           # Generate comparative visualizations
+│   │   └── results/                     # Garak outputs, parsed data, analysis, figures
+│   │       ├── garak/                   # Raw Garak JSONL reports and logs
+│   │       ├── parsed/                  # Structured JSON results
+│   │       ├── analysis/                # Comparison summary and analysis report
+│   │       └── figures/                 # Comparative visualizations (5 charts)
+│   │
+│   ├── 08_inspect_ai_evaluations/       # UK AISI evaluation framework
+│   ├── 09_pyrit_adversarial/            # Microsoft PyRIT red-teaming
+│   ├── 10_nemo_guardrails/              # NVIDIA NeMo production guardrails
+│   ├── 11_gemma_scope/                  # Google DeepMind feature visualization
+│   └── 12_sae_training/                 # Sparse autoencoder training
 │
-├── pyproject.toml                # Python dependencies (ollama, openai, anthropic, pandas, matplotlib)
-└── README.md                     # This file
+├── pyproject.toml                       # Python dependencies (ollama, openai, anthropic, pandas, matplotlib)
+└── README.md                            # This file
 ```
 
 ## Experiments
@@ -273,6 +253,29 @@ ai-safety/
 - [NVIDIA NeMo Guardrails](https://github.com/NVIDIA/NeMo-Guardrails) framework documentation
 - [OWASP API Security Top 10](https://owasp.org/www-project-api-security/)
 - [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
+
+---
+
+### [07: Garak Vulnerability Scanning - Automated vs Manual Red-Teaming](experiments/07_garak_vulnerability_scan/README.md)
+
+**Category**: Red-Teaming | **Tools**: Garak LLM Vulnerability Scanner | **Builds on**: Experiments 01, 02, 06
+
+**Overview**: Compares automated vulnerability scanning effectiveness against manual red-teaming by running Garak's systematic probe library (36,120 tests across 3 models) versus Experiment 02's hand-crafted jailbreak attacks (176 tests). Tests whether industry-standard automated tools can provide comparable discovery rates while dramatically reducing human effort, or whether manual red-teaming's targeted creativity achieves superior per-prompt effectiveness. Evaluates 9 Garak probe categories (encoding, DAN/roleplay, prompt injection, toxicity, continuation) matching Experiment 02's attack types plus novel vulnerability categories, analyzing coverage trade-offs, false positive rates, and efficiency metrics to inform optimal integration strategies for AISI operational workflows.
+
+**Target Capability**: Experience developing or using safety-related tooling such as automated evaluation pipelines, red-teaming frameworks, test harnesses; working knowledge of vulnerability scanning methodologies and comparative effectiveness analysis.
+
+**Key Findings**: Automated scanning achieved 13.1% vulnerability discovery rate nearly identical to manual red-teaming's 12.9% despite testing 205x more prompts (36,120 vs 176), contradicting the hypothesis that human-crafted targeted attacks achieve 2-4x higher per-prompt success. However, this aggregate parity masks critical divergences: **prompt injection emerged as the universal automated attack vector** with 10-29% success rates (gemma3 catastrophic 29.3% = 2,247/7,680 failures), dramatically outperforming manual injection testing (6.2% success). **Encoding attacks showed strong resistance** across all models (0.2-1.6% vulnerability), validating modern safety architectures apply filtering post-decoding. **Multi-turn attacks represent complete coverage gap**—Garak tested 0 multi-turn prompts versus 40 manual attempts achieving 25.0% success (mistral catastrophic 60%), revealing automated tools systematically underestimate conversational safety risks due to stateless probe-detector architecture. **Novel toxicity discovery** uncovered 165 failures (8-14% rates) in categories entirely absent from manual testing, demonstrating comprehensive vulnerability surface mapping value. Encoding coverage expanded 576x (23,040 vs 40 tests), injection 160x (7,680 vs 48), but roleplay only 1.25x (60 vs 48), revealing automation excels at systematic variation within attack categories but cannot replicate human creativity in multi-turn manipulation.
+
+<img src="experiments/07_garak_vulnerability_scan/results/figures/coverage_heatmap.png" width="800" alt="Automated vs Manual Coverage Comparison">
+
+<img src="experiments/07_garak_vulnerability_scan/results/figures/false_positive_breakdown.png" width="800" alt="Vulnerability Severity Distribution">
+
+**Outcome**: Demonstrates automated and manual red-teaming discover **orthogonal vulnerability classes** rather than overlapping attack spaces, necessitating integrated workflows instead of tool substitution. Garak's complete inability to test multi-turn attacks creates dangerous false confidence—mistral's 11.1% automated vulnerability appears dramatically superior to its 25.0% manual adversarial robustness when conversational manipulation is considered. The finding that injection testing achieved 10-29% automated success versus 6.2% manual proves systematic probe variation discovers weaknesses spot-checking misses, indicating injection resistance should be validated through automated comprehensive testing (thousands of variations) rather than manual sampling. Toxicity generation's 8-14% rates despite 0-2.3% jailbreak success reveals safety training prioritizes harmful intent recognition over toxic language filtering, creating blind spots where models refuse explicit harm requests but generate offensive content under stylistic framing. **Optimal AISI integration strategy**: Phase 1 automated comprehensive scanning (8-12 hours) for systematic vulnerability surface mapping and weak category identification; Phase 2 targeted manual red-teaming (8-16 hours) exploiting conversational context, developing novel attack vectors, and validating automated findings; Phase 3 automated regression testing (2-4 hours) for continuous monitoring during model development. Organizations deploying conversational AI cannot rely solely on automated scanning—production safety validation requires both approaches to capture systematic variation (automation strength) and multi-turn creative exploitation (human expertise). The 205x coverage multiplier at only 1.1x time cost validates automation for comprehensive testing, but the multi-turn gap (0 tests vs 40 manual, 25% success) represents deployment-blocking limitation requiring human red-team supplementation.
+
+**Key Citations**:
+- Derczynski et al., "Garak: A Framework for Security Probing Large Language Models" - [GitHub](https://github.com/NVIDIA/garak)
+- Perez et al., ["Red Teaming Language Models with Language Models"](papers/2022_perez_red-teaming-language-models-with-language-models.pdf) (Anthropic, 2022)
+- Japan AISI, ["Red Teaming Methodology Guide"](https://aisi.go.jp/assets/pdf/ai_safety_RT_v1.00_en.pdf) (2024)
 
 ---
 
