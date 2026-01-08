@@ -1,0 +1,60 @@
+default_language_version:
+  python: python3.12
+
+repos:
+  - repo: local
+
+    hooks:
+      - id: ruff
+        name: Ruff
+        entry: uv run ruff check
+        language: system
+        types: [ python ]
+        args: [ "--fix", "--config=config/ruff.toml" ]
+        exclude: ^docs/
+
+      - id: black
+        name: Black
+        entry: uv run black
+        language: system
+        types: [ python ]
+        args: [ "--line-length", "120" ]
+
+      - id: deptry
+        name: Deptry
+        entry: uv run deptry
+        language: system
+        files: 'pyproject.toml'
+        pass_filenames: false
+        args : ['.']
+
+      - id: vulture
+        name: Vulture
+        entry: uv run vulture
+        language: system
+        types: [ python ]
+        args: [ '--min-confidence', '80', 'experiments/', 'scripts/', 'config/vulture.py' ]
+        exclude: ^tests/|^docs/
+        pass_filenames: false
+
+      - id: mypy
+        name: Mypy
+        entry: uv run mypy
+        language: system
+        types: [ python ]
+        args: [ '--config-file', 'config/mypy.ini' ]
+
+      - id: bandit
+        name: Bandit
+        entry: uv run bandit
+        language: system
+        types: [ python ]
+        args: [ '--config', 'config/bandit.yml', '--severity-level', 'medium' ]
+
+      - id: pytest
+        name: Pytest
+        entry: uv run pytest
+        language: system
+        types: [ python ]
+        pass_filenames: false
+        args: [ '--rootdir', '.', '-c', 'config/pytest.ini' ]
