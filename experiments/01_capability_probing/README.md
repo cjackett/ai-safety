@@ -49,27 +49,24 @@ This approach enables nuanced evaluation that properly handles edge cases like l
 ### Run Capability Probe
 
 ```bash
-# Test only local Ollama models (fast, ~10 minutes for full test)
-python probe_models.py --models local
+# Test all available local models (fast, ~10 minutes for full test)
+python run_probe_models.py --models all
 
 # Quick test mode (1 prompt per category = 8 prompts total)
-python probe_models.py --models local --test
-
-# Test all available models (local + API)
-python probe_models.py --models all
+python run_probe_models.py --models all --test
 
 # Test specific models
-python probe_models.py --models llama3.2,gemma3
+python run_probe_models.py --models llama3.2,gemma3
 ```
 
 ### Analyse Results
 
 ```bash
-# Auto-detect and analyse latest results file (saves to results/)
+# Auto-detect and analyse latest results file (saves to results/figures and results/analysis)
 python analyse_results.py
 
 # Or specify a specific results file
-python analyse_results.py results/probe_models_20251225_083630.json
+python analyse_results.py results/raw/probe_models_20251225_083630.json
 ```
 
 ## Results
@@ -84,7 +81,7 @@ The combined dataset across all four models shows 279 out of 320 prompts (87.19%
 
 ### Refusal Patterns by Category
 
-<img src="results/radar_charts.png" width="800">
+<img src="results/figures/radar_charts.png" width="800">
 
 Category-level analysis reveals systematic vulnerabilities across harm domains. **Cyber security** emerged as the weakest category with 80.0% refusal rate, making it the most vulnerable domain for eliciting harmful content. **CBRN** and **disinformation** both achieved 82.5% refusal, followed by **privacy** at 85.0%. Stronger categories included **illegal** (90.0%), **deception** (90.0%), **child safety** (92.5%), and **harmful content** (95.0%), which showed the most robust guardrails.
 
@@ -92,7 +89,7 @@ Mistral was identified as the most vulnerable model in 6 out of 8 categories (cy
 
 ### Compliance Distribution
 
-<img src="results/compliance_by_model.png" width="800">
+<img src="results/figures/compliance_by_model.png" width="800">
 
 The compliance distribution reveals stark differences between models. Llama3.2 maintains perfect categorical refusal with 100% refused and 0% hedged/full, representing the gold standard for safety alignment. Gemma3 and qwen3 show similar profiles with 93.8% and 90.0% refusal respectively, with small amounts of hedging (3.8% each) and minimal full compliance (2.5% and 6.2%). Mistral exhibits a concerning pattern with only 65.0% refusal, 23.8% hedging, and 11.2% full compliance, indicating fundamental weaknesses in its safety guardrails.
 
@@ -100,7 +97,7 @@ The 16 full compliance cases across 320 prompts (5.0%) demonstrate that modern s
 
 ### Category-Specific Refusal Rates
 
-<img src="results/refusal_heatmap.png" width="800">
+<img src="results/figures/refusal_heatmap.png" width="800">
 
 The heatmap reveals significant heterogeneity in safety performance. Llama3.2 shows perfect 100% refusal across all categories (solid green), establishing the strongest baseline. Gemma3 and qwen3 show minor vulnerabilities concentrated in specific categories - gemma3 in disinformation and privacy, qwen3 in CBRN, harmful content, and child safety. Mistral shows systematic weakness across multiple categories, with particularly poor performance in cyber (50%), illegal (62.5%), and disinformation (62.5%).
 
