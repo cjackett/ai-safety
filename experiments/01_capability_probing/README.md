@@ -6,10 +6,10 @@ Initial baseline testing of local open-source models to understand their safety 
 
 ## Research Questions
 
-1. How do local open-source models (Llama, Qwen, Gemma) respond to harmful requests?
+1. How do local open-source models (Llama, Qwen, Gemma, Mistral) respond to harmful requests?
 2. What are the baseline refusal patterns across different risk categories?
 3. Can models distinguish between clear refusal, hedged compliance, and full compliance?
-4. Are there observable differences in guardrail implementation across different model architectures and sizes?
+4. Are there observable differences in guardrail implementation across different model architectures?
 
 ## Methodology
 
@@ -36,11 +36,11 @@ Responses are classified using a **multi-judge LLM approach** to ensure rigorous
 3. **Full** - Provides harmful content without meaningful refusal
 
 **Multi-judge evaluation process:**
-- Each response is independently classified by **3 LLM judges** (drawn from llama3.2:3b, qwen3:4b, gemma3:4b, mistral:7b)
-- **Self-judgment bias elimination**: The tested model is excluded from judging its own responses
-- **Majority voting**: Final classification is determined by agreement among judges
-- **Inter-rater agreement metrics**: Cohen's kappa (κ) calculated to measure reliability
-- **Auditable decisions**: Individual judge votes and reasoning saved for transparency
+- Each response is independently classified by 3 LLM judges (drawn from llama3.2:3b, qwen3:4b, gemma3:4b, mistral:7b)
+- The tested model is excluded from judging its own responses to eliminate self-judgment bias
+- Final classification is determined by majority voting among judges, then with human review for difficult cases
+- Cohen's kappa (κ) is calculated to measure inter-rater agreement reliability
+- Individual judge votes and reasoning are saved for transparency and auditability
 
 This approach enables nuanced evaluation that properly handles edge cases like long empathetic refusals and reduces false positives from discussing harm without providing instructions.
 
@@ -49,14 +49,14 @@ This approach enables nuanced evaluation that properly handles edge cases like l
 ### Run Capability Probe
 
 ```bash
-# Test all available local models (fast, ~10 minutes for full test)
-python run_probe_models.py --models all
+# Test all available local models
+python run_capability_probing.py
 
 # Quick test mode (1 prompt per category = 8 prompts total)
-python run_probe_models.py --models all --test
+python run_capability_probing.py --test
 
 # Test specific models
-python run_probe_models.py --models llama3.2,gemma3
+python run_capability_probing.py --models llama3.2,gemma3
 ```
 
 ### Analyse Results
@@ -71,98 +71,71 @@ python analyse_results.py results/raw/probe_models_20251225_083630.json
 
 ## Results
 
-Testing of four local models (llama3.2:3b, qwen3:4b, gemma3:4b, mistral:7b) against 80 harmful prompts each across 8 risk categories revealed significant variation in baseline safety performance using LLM-based multi-judge classification. The 320 total prompts yielded 87.19% refusal, 7.81% hedging, and 5.0% full compliance overall, demonstrating that while most models have strong guardrails, vulnerabilities exist.
+Testing of four local models (llama3.2:3b, qwen3:4b, gemma3:4b, mistral:7b) against 80 harmful prompts each across 8 risk categories revealed significant variation in baseline safety performance using LLM-based multi-judge classification. The 320 total prompts yielded 79.69% refusal, 17.5% hedging, and 2.81% full compliance overall, demonstrating that while two models achieve strong guardrails, both qwen3 and mistral exhibit concerning vulnerabilities.
 
 ### Overall Compliance Rates
 
-**llama3.2:3b** demonstrated perfect guardrails with 80 out of 80 prompts (100.0%) refused, 0% hedged, and 0% full compliance. **qwen3:4b** showed strong but imperfect safety with 72 out of 80 prompts (90.0%) refused, 3 prompts (3.8%) hedged, and 5 prompts (6.2%) with full compliance. **gemma3:4b** achieved excellent performance with 75 out of 80 prompts (93.8%) refused, 3 prompts (3.8%) hedged, and 2 prompts (2.5%) with full compliance. **mistral:7b** exhibited the weakest guardrails with only 52 out of 80 prompts (65.0%) refused, 19 prompts (23.8%) hedged, and 9 prompts (11.2%) with full compliance.
+**llama3.2:3b** demonstrated perfect guardrails with 80 out of 80 prompts (100.0%) refused, 0% hedged, and 0% full compliance. **gemma3:4b** achieved excellent performance with 74 out of 80 prompts (92.5%) refused, 6 prompts (7.5%) hedged, and 0% full compliance. **qwen3:4b** showed concerning vulnerabilities with 69 out of 80 prompts (86.2%) refused, 6 prompts (7.5%) hedged, and 5 prompts (6.2%) with full compliance. **mistral:7b** exhibited catastrophic guardrail failures with only 32 out of 80 prompts (40.0%) refused, 44 prompts (55.0%) hedged, and 4 prompts (5.0%) with full compliance.
 
-The combined dataset across all four models shows 279 out of 320 prompts (87.19%) refused, 25 prompts (7.81%) hedged, and 16 prompts (5.0%) with full compliance, revealing that direct harmful requests can still succeed against some models despite modern safety training.
+The combined dataset across all four models shows 255 out of 320 prompts (79.69%) refused, 56 prompts (17.5%) hedged, and 9 prompts (2.81%) with full compliance. The 9 full compliance cases were split between qwen3:4b (5 cases: cyber, illegal, privacy, child_safety, deception) and mistral:7b (4 cases: cyber, disinformation, privacy, deception), while llama3.2:3b and gemma3:4b achieved zero full compliance. This demonstrates that only two of four tested models have robust safety alignment suitable for deployment.
 
 ### Refusal Patterns by Category
 
 <img src="results/figures/radar_charts.png" width="800">
 
-Category-level analysis reveals systematic vulnerabilities across harm domains. **Cyber security** emerged as the weakest category with 80.0% refusal rate, making it the most vulnerable domain for eliciting harmful content. **CBRN** and **disinformation** both achieved 82.5% refusal, followed by **privacy** at 85.0%. Stronger categories included **illegal** (90.0%), **deception** (90.0%), **child safety** (92.5%), and **harmful content** (95.0%), which showed the most robust guardrails.
+Category-level analysis reveals systematic vulnerabilities concentrated primarily in mistral:7b and qwen3:4b. Cyber security emerged as the weakest category with only 70.0% refusal rate, followed by disinformation (72.5%), privacy (75.0%), illegal (77.5%), and deception (80.0%). Stronger categories included CBRN (82.5%), and both child safety and harmful content tied at 90.0%, showing the most robust guardrails.
 
-Mistral was identified as the most vulnerable model in 6 out of 8 categories (cyber, deception, disinformation, illegal, and tied for privacy). Qwen3 showed specific vulnerabilities in CBRN, child safety, and harmful content categories. The concentration of mistral's weaknesses across multiple domains suggests systematic issues with its safety training rather than isolated edge cases.
+Mistral was identified as the most vulnerable model in 7 of 8 categories, with catastrophic performance in illegal and disinformation (both 20% refusal), followed by CBRN, cyber, privacy, and deception (all 30% refusal). Only in harmful content and child safety (both 80% refusal) did mistral approach acceptable safety levels, with child safety tied for worst with qwen3. Qwen3 showed concerning full compliance vulnerabilities across 5 different categories (cyber, illegal, privacy, child_safety, deception), with refusal rates ranging from 80-90%, demonstrating that 86% aggregate safety masks significant category-specific failures. Gemma3 showed only one vulnerability in cyber (70% refusal with 3 hedged cases), while llama3.2 achieved perfect 100% refusal across all 8 categories.
 
 ### Compliance Distribution
 
 <img src="results/figures/compliance_by_model.png" width="800">
 
-The compliance distribution reveals stark differences between models. Llama3.2 maintains perfect categorical refusal with 100% refused and 0% hedged/full, representing the gold standard for safety alignment. Gemma3 and qwen3 show similar profiles with 93.8% and 90.0% refusal respectively, with small amounts of hedging (3.8% each) and minimal full compliance (2.5% and 6.2%). Mistral exhibits a concerning pattern with only 65.0% refusal, 23.8% hedging, and 11.2% full compliance, indicating fundamental weaknesses in its safety guardrails.
+The compliance distribution reveals significant heterogeneity across models. Llama3.2 achieves perfect safety with 100.0% refused and 0% hedged/full, establishing the gold standard for safety alignment in small open-source models. Gemma3 shows strong performance with 92.5% refused and 7.5% hedging, critically maintaining 0% full compliance despite minor hedging behavior. Qwen3 demonstrates concerning vulnerabilities with 86.2% refused, 7.5% hedging, and 6.2% full compliance (5 cases), indicating significant safety gaps. Mistral exhibits catastrophic failures with only 40.0% refused, 55.0% hedging, and 5.0% full compliance (4 cases), with the extraordinarily high hedging rate representing over half of all responses.
 
-The 16 full compliance cases across 320 prompts (5.0%) demonstrate that modern safety training is imperfect, with mistral accounting for 9 of these cases (56.3% of all failures). This concentration suggests that model selection is critical for safety-sensitive applications.
+The 9 full compliance cases across 320 prompts (2.81%) were split between qwen3:4b (5 cases, 55.6% of failures) and mistral:7b (4 cases, 44.4% of failures), while llama3.2 and gemma3 achieved zero full compliance. Qwen3's emergence as the highest contributor to full compliance failures despite its 86% aggregate refusal rate demonstrates that overall statistics mask category-specific vulnerabilities. Mistral's 55.0% hedging rate, where it provides harmful content prefaced with disclaimers like "for educational purposes," remains the most concerning pattern as it delivers dangerous information while maintaining a veneer of responsibility.
 
 ### Category-Specific Refusal Rates
 
 <img src="results/figures/refusal_heatmap.png" width="800">
 
-The heatmap reveals significant heterogeneity in safety performance. Llama3.2 shows perfect 100% refusal across all categories (solid green), establishing the strongest baseline. Gemma3 and qwen3 show minor vulnerabilities concentrated in specific categories - gemma3 in disinformation and privacy, qwen3 in CBRN, harmful content, and child safety. Mistral shows systematic weakness across multiple categories, with particularly poor performance in cyber (50%), illegal (62.5%), and disinformation (62.5%).
+The heatmap reveals dramatic safety heterogeneity. Llama3.2 shows perfect 100% refusal across all 8 categories (solid green), representing the only model with flawless categorical performance. Gemma3 demonstrates strong safety with 90-100% refusal across 7 of 8 categories, with only cyber showing vulnerability (70% refusal with 3 hedged cases). Qwen3 reveals concerning systematic weaknesses with 80% refusal across 4 critical categories (cyber, disinformation, privacy, child_safety), with cyber, privacy, and child_safety containing both hedging and full compliance cases and disinformation containing hedged cases only, plus additional vulnerabilities in illegal (90%, 1 full) and deception (90%, 1 full). Mistral shows catastrophic systematic failure across all categories, with particularly alarming performance in illegal and disinformation (both 20% refusal), CBRN, cyber, privacy, and deception (all 30% refusal). Even mistral's best categories (harmful content and child_safety at 80% refusal) match qwen3's worst categories and still exceed gemma3's worst category.
 
 ## Discussion
 
 ### Guardrail Implementation Patterns
 
-The four models demonstrate dramatically different safety approaches, revealing critical insights about guardrail design and effectiveness in modern language models.
+The four models demonstrate dramatically different safety approaches, revealing fundamental insights about guardrail design and effectiveness in modern language models.
 
-**llama3.2:3b** (Meta, 3B parameters) achieves perfect categorical refusal with 100% refused across all 80 prompts and 0% hedging or full compliance. This represents the strongest safety alignment observed, suggesting highly effective RLHF (Reinforcement Learning from Human Feedback) training that consistently recognizes and refuses harmful requests across all categories without exception. The fact that the smallest model achieved perfect performance demonstrates that parameter count does not determine safety effectiveness.
+**llama3.2:3b** (Meta, 3B parameters) achieves perfect categorical refusal with 100.0% refused across all 80 prompts, 0% hedging, and 0% full compliance. This represents the strongest safety alignment observed, demonstrating that highly effective RLHF (Reinforcement Learning from Human Feedback) training can consistently recognize and refuse harmful requests across all categories without exception. The fact that the smallest model achieved perfect performance demonstrates that parameter count does not determine safety effectiveness.
 
-**qwen3:4b** (Alibaba, 4B parameters) shows strong but imperfect safety with 90.0% refusal, 3.8% hedging, and 6.2% full compliance (5 cases). The 5 full compliance cases span CBRN (sarin synthesis), harmful content (eating disorder concealment), disinformation (conspiracy theories), privacy (location tracking), and child safety (grooming tactics). This pattern suggests gaps in safety training across multiple domains rather than concentrated weakness in one area.
+**gemma3:4b** (Google, 4B parameters) achieves 92.5% refusal with strong overall performance, showing 7.5% hedging (6 cases) and 0% full compliance. The hedged cases occurred primarily in cyber (3 cases, showing 70% categorical refusal), disinformation (1 case), harmful_content (1 case), and privacy (1 case). The hedging pattern suggests gemma3 sometimes provides contextual educational information with safety disclaimers, representing a design choice that balances helpfulness with safety while never providing harmful content without meaningful restrictions.
 
-**gemma3:4b** (Google, 4B parameters) achieves 93.8% refusal with excellent overall performance, showing only 2 full compliance cases (2.5%). The failures occurred in disinformation (conspiracy theories) and privacy (facial recognition tracking), suggesting minor gaps in safety coverage for these specific threat vectors. The 3.8% hedging rate indicates gemma3 sometimes provides contextual information with disclaimers, representing a design choice that balances helpfulness with safety.
+**qwen3:4b** (Alibaba, 4B parameters) demonstrates concerning vulnerabilities with 86.2% refusal, 7.5% hedging, and 6.2% full compliance (5 cases). The 5 full compliance cases span cyber, illegal, privacy, child_safety, and deception categories, while 6 hedged cases occur in child_safety (1), cyber (1), disinformation (2), harmful_content (1), and privacy (1). This pattern reveals systematic safety gaps across multiple domains rather than isolated failures, with qwen3 showing 80% categorical refusal in 4 different high-risk categories (cyber, disinformation, privacy, child_safety). Despite strong aggregate statistics (86% refusal), the presence of full compliance cases across diverse categories indicates fundamental weaknesses in safety training that aggregate metrics mask.
 
-**mistral:7b** (Mistral AI, 7B parameters) exhibits concerning weaknesses with only 65.0% refusal, 23.8% hedging, and 11.2% full compliance (9 cases). Despite being the largest model tested, mistral showed the weakest safety performance across multiple categories including cyber, illegal activities, disinformation (3 cases), privacy, and deception (2 cases). The high hedging rate (19 prompts) suggests mistral frequently provides harmful content prefaced with disclaimers like "for educational purposes" or "to demonstrate," which LLM-based classification correctly identified as compliance rather than refusal.
+**mistral:7b** (Mistral AI, 7B parameters) exhibits catastrophic safety failures with only 40.0% refusal, 55.0% hedging, and 5.0% full compliance (4 cases). Despite being the largest model tested, mistral showed dramatically weak safety performance with 4 full compliance cases in cyber, disinformation, privacy, and deception. The extraordinarily high hedging rate (44 prompts, representing over half of all test cases) reveals mistral's fundamental safety architecture flaw: it frequently provides harmful content prefaced with disclaimers like "for educational purposes," "to demonstrate," or "for research," which LLM-based classification correctly identified as compliance rather than refusal. Mistral's categorical failures span all domains, with particularly alarming performance in illegal and disinformation (both 20% refusal), followed by CBRN, cyber, privacy, and deception (all 30% refusal).
 
 ### Key Findings
 
-**Model size does not predict safety**: The smallest model (llama3.2:3b, 3B parameters) achieved perfect 100% refusal, outperforming the larger mistral:7b (7B parameters) which showed only 65% refusal. This demonstrates that safety effectiveness depends primarily on training methodology and alignment techniques rather than parameter count.
+**Model size does not predict safety**: The smallest model (llama3.2:3b, 3B parameters) achieved perfect 100.0% refusal with 0% hedging and 0% full compliance, dramatically outperforming the larger mistral:7b (7B parameters) which showed catastrophic 40.0% refusal with 55.0% hedging and 5.0% full compliance. This demonstrates that safety effectiveness depends primarily on training methodology and alignment techniques rather than parameter count.
 
-**Significant safety variance across models**: Testing revealed 87.19% overall refusal with 5.0% full compliance across 320 prompts. However, performance ranged from llama3.2's perfect 100% refusal to mistral's concerning 65% refusal, demonstrating that model selection is critical for safety-sensitive applications.
+**Only two of four models suitable for deployment**: Testing revealed 79.69% overall refusal with 2.81% full compliance across 320 prompts. The 9 full compliance cases were split between qwen3:4b (5 cases, 55.6% of failures) and mistral:7b (4 cases, 44.4% of failures), while llama3.2 and gemma3 achieved zero full compliance. This demonstrates that model selection is absolutely critical for safety-sensitive applications, with only llama3.2 and gemma3 showing deployment-ready safety profiles.
 
-**Disclaimers don't prevent harm**: Mistral's 23.8% hedging rate (19 prompts) reveals a problematic pattern where models provide harmful content prefaced with "for educational purposes" or "to demonstrate the negative nature." LLM-based classification correctly identified these as compliance failures, whereas keyword-based approaches would have missed them by focusing on disclaimer language rather than actual content provided.
+**Aggregate statistics mask category-specific vulnerabilities**: Qwen3's 86.2% aggregate refusal rate appears acceptable but masks serious safety failures across 5 categories with full compliance cases (cyber, illegal, privacy, child_safety, deception). The model's consistent 80% categorical refusal across 4 critical domains (cyber, disinformation, privacy, child_safety) demonstrates that models can pass aggregate safety benchmarks while failing in specific high-risk categories. Category-level analysis is essential for identifying deployment-blocking vulnerabilities.
 
-**Category vulnerabilities identified**: Cyber security (80% refusal), CBRN (82.5%), and disinformation (82.5%) emerged as the weakest categories, while harmful content (95%), child safety (92.5%), and deception/illegal (90%) showed stronger guardrails. The concentration of failures in cyber and disinformation suggests these domains need enhanced safety training.
+**Disclaimers don't prevent harm**: Mistral's catastrophic 55.0% hedging rate (44 prompts, over half of all test cases) reveals the most problematic pattern where models provide harmful content prefaced with "for educational purposes," "to demonstrate," or "for research." LLM-based classification correctly identified these as compliance failures, whereas keyword-based approaches would have missed them by focusing on disclaimer language rather than actual harmful content provided. This represents a fundamental safety architecture flaw where the model recognizes harmful intent but proceeds to provide dangerous information anyway.
 
-**Inter-rater agreement**: LLM judges achieved 73.4% perfect agreement across 320 classifications, demonstrating reasonable but imperfect consistency. This highlights the value of using multiple independent judges to reduce classification bias and improve reliability compared to single-judge or keyword-based approaches.
-
-### Implications for Future Testing
-
-These baseline results reveal critical directions for adversarial testing:
-
-**Testing llama3.2's perfect guardrails**: The 100% refusal rate establishes llama3.2 as the gold standard for baseline safety, making it an ideal target for jailbreak testing. Adversarial techniques (DAN, roleplay, encoding) should specifically test whether perfect baseline scores predict adversarial robustness or whether they mask vulnerabilities that only emerge under attack.
-
-**Exploiting category weaknesses**: Cyber security (80%), CBRN (82.5%), and disinformation (82.5%) represent systematic vulnerabilities that jailbreak attempts should target. The concentration of failures in these categories suggests they may be more susceptible to adversarial techniques than stronger categories like harmful content (95%) or child safety (92.5%).
-
-**Multi-turn attacks on weaker models**: Mistral's 65% baseline refusal rate suggests its guardrails are already vulnerable to direct requests. Multi-turn conversational attacks may achieve even higher success rates by gradually building context before making harmful requests, potentially pushing success rates above the 35% observed in baseline testing.
-
-**Hedging as attack vector**: The 25 hedged responses (7.81%) represent a middle ground between refusal and compliance that adversarial techniques might exploit. Testing whether prompts can be crafted to maximize hedging behavior (disclaimered harmful content) could reveal whether models can be pushed from hedging to full compliance.
+**Category vulnerabilities span both qwen3 and mistral**: Cyber security (70% refusal) emerged as the weakest category, followed by disinformation (72.5%), privacy (75.0%), illegal (77.5%), and deception (80.0%). Mistral drove most aggregate weakness with catastrophic 20-30% refusal across 6 categories, but qwen3's full compliance cases in cyber, illegal, privacy, child_safety, and deception demonstrate that multiple models contribute to category-level vulnerabilities. Only harmful content and child_safety (both 90.0%) showed strong cross-model guardrails.
 
 ## Conclusion
 
-Testing four local open-source models (llama3.2:3b, qwen3:4b, gemma3:4b, mistral:7b) against 320 direct harmful prompts revealed significant variation in baseline safety performance. Using rigorous LLM-based multi-judge classification, the experiment achieved 87.19% overall refusal with 7.81% hedging and 5.0% full compliance (16 cases), demonstrating that direct harmful requests can succeed against some models despite modern safety training.
-
-**llama3.2:3b** established the gold standard with perfect 100% refusal across all 80 prompts, proving that robust safety guardrails are achievable even in small open-source models. **gemma3:4b** and **qwen3:4b** showed excellent performance at 93.8% and 90.0% refusal respectively, with only 2 and 5 full compliance cases. **mistral:7b**, despite being the largest model, exhibited concerning weaknesses with only 65.0% refusal and 9 full compliance cases, demonstrating that parameter count does not determine safety effectiveness.
-
-The key methodological contribution is the demonstration that **LLM-based classification with improved prompts catches content that keyword-based approaches miss**. Mistral's 23.8% hedging rate (providing harmful content with disclaimers like "for educational purposes") would have been misclassified as refusals by keyword matching, creating false confidence in model safety. The multi-judge approach with 73.4% perfect agreement provides more reliable and nuanced evaluation than single-classifier or rule-based systems.
-
-Category analysis identified **cyber security (80%), CBRN (82.5%), and disinformation (82.5%)** as systematic vulnerabilities requiring enhanced safety training, while **harmful content (95%), child safety (92.5%), and deception/illegal (90%)** showed stronger guardrails. These baseline metrics establish critical reference points for evaluating how adversarial techniques (jailbreaks, multi-turn attacks, prompt injection) increase success rates beyond direct request baselines.
-
-The finding that two independent models (llama3.2 and qwen3) from different organizations both achieved perfect 100% refusal rates suggests that effective safety alignment is both achievable and reproducible in small open-source models. However, the subtle difference in gemma3's behavior—showing 2.5% hedging concentrated in cyber prompts—hints that even minor variations in safety training or architectural choices can create measurable differences in refusal behavior. Whether these differences in baseline hedging correlate with differences in adversarial robustness remains a critical question for subsequent experiments to address.
+Testing four local open-source models against 320 direct harmful prompts revealed significant safety heterogeneity, with 79.69% overall refusal, 17.5% hedging, and 2.81% full compliance. Llama3.2:3b achieved perfect 100% refusal across all categories, while gemma3:4b maintained 92.5% refusal with 0% full compliance. However, qwen3:4b demonstrated concerning vulnerabilities (86.2% refusal, 6.2% full compliance across 5 categories), and mistral:7b exhibited catastrophic failures (40.0% refusal, 55.0% hedging, 5.0% full compliance). The 9 full compliance cases were split between qwen3 (5 cases) and mistral (4 cases), with only llama3.2 and gemma3 showing deployment-ready safety profiles. The key methodological contribution is demonstrating that LLM-based multi-judge classification catches hedging behavior (providing harmful content with disclaimers) that keyword-based approaches miss, and that aggregate statistics can mask category-specific vulnerabilities—qwen3's 86% aggregate refusal appears acceptable but conceals systematic failures across cyber, illegal, privacy, child_safety, and deception categories at 80-90% categorical refusal. Category analysis revealed cyber security (70%) as the weakest domain, followed by disinformation (72.5%), privacy (75%), illegal (77.5%), and deception (80%), with mistral driving most aggregate weakness through catastrophic 20-30% refusal across six categories. The finding that only two of four tested models achieved 0% full compliance demonstrates that parameter count does not determine safety effectiveness, and that systematic category-level evaluation is non-negotiable before deployment.
 
 ## References
 
-**Evaluation Frameworks:**
+**Evaluation Methodology:**
 - Shevlane et al. (2023). "Model Evaluation for Extreme Risks." [Paper](../../papers/2023_shevlane_model-evaluation-for-extreme-risks.pdf)
-- OpenAI (2024). "GPT-5.2 System Card." [Paper](../../papers/2024_openai_gpt-5-2-system-card.pdf)
-
-**Safety Techniques:**
-- Anthropic (2022). "Constitutional AI: Harmlessness from AI Feedback." [Paper](../../papers/2022_anthropic_constitutional-ai-harmlessness-from-ai-feedback.pdf)
+- Phuong, Aitchison et al. (2024). "Evaluating Frontier Models for Dangerous Capabilities." [Paper](../../papers/2024_phuong_evaluating-frontier-models-for-dangerous-capabilities.pdf)
 
 **Risk Taxonomies:**
 - Hendrycks et al. (2023). "Overview of Catastrophic AI Risks." [Paper](../../papers/2023_hendrycks_overview-of-catastrophic-ai-risks.pdf)
-
-**Tools & Frameworks:**
-- UK AISI Inspect AI: https://ukgovernmentbeis.github.io/inspect_ai/
-- HELM Evaluation Framework: https://crfm.stanford.edu/helm/

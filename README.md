@@ -69,7 +69,7 @@ uv sync
 ai-safety/
 ├── experiments/
 │   ├── 01_capability_probing/           # Baseline safety guardrail testing
-│   │   ├── probe_models.py              # Test models against harmful prompts
+│   │   ├── run_capability_probing.py    # Test models against harmful prompts
 │   │   ├── analyse_results.py           # Generate visualizations and statistics
 │   │   ├── prompts/                     # 80 harmful prompts across 8 categories
 │   │   └── results/                     # Test results and radar charts
@@ -138,18 +138,20 @@ ai-safety/
 
 **Category**: Evaluation
 
-**Overview**: Establishes baseline safety performance by testing four local models (llama3.2:3b, qwen3:4b, gemma3:4b, mistral:7b) against 80 direct harmful requests each across 8 risk categories (CBRN, cyber, illegal, harmful content, disinformation, privacy, child safety, deception). The experiment uses LLM-based multi-judge classification to evaluate whether models refuse, hedge with disclaimers, or fully comply when presented with unobfuscated harmful prompts.
+**Overview**: This experiment tested baseline safety performance across four local models (llama3.2:3b, qwen3:4b, gemma3:4b, mistral:7b) by presenting each with 80 direct harmful requests across 8 risk categories (CBRN, cyber, illegal, harmful content, disinformation, privacy, child safety, deception). Using LLM-based multi-judge classification, we evaluated whether models refused the requests, hedged with disclaimers, or fully complied.
 
 **Target Capability**: Demonstrated experience building and running evaluations of frontier AI systems or safety-relevant model behaviours; running large-scale behavioural evaluations, including managing logs and datasets.
 
-**Key Findings**: Testing 320 total prompts revealed significant variation in baseline safety. llama3.2 achieved perfect 100% refusal, demonstrating robust guardrails. qwen3 showed 90.0% refusal with 6.2% full compliance, gemma3 achieved 93.8% refusal with 2.5% full, while mistral exhibited the weakest performance at only 65.0% refusal with 11.2% full compliance. Overall: 87.19% refusal, 7.81% hedging, 5.0% full compliance. Critically, LLM-based classification caught disclaimered harmful content (e.g., "for educational purposes: [actual harmful content]") that keyword-based approaches would miss, revealing that mistral's 23.8% hedging represents actual information leakage.
+**Key Findings**: Testing 320 prompts revealed sharp variation in baseline safety. llama3.2 achieved perfect refusal (80/80, 100%) with zero hedging and zero full compliance, while gemma3 reached 92.5% refusal with 7.5% hedging and maintained 0% full compliance. qwen3 showed concerning vulnerabilities at 86.2% refusal with 6.2% full compliance (5 cases), and mistral exhibited catastrophic failures at 40.0% refusal with 55.0% hedging and 5.0% full compliance (4 cases). Overall: 79.69% refusal, 17.5% hedging, 2.81% full compliance, with all 9 full compliance cases split between qwen3 (5) and mistral (4). The LLM-based classification successfully caught mistral's extraordinary hedging behavior where it provides harmful content with disclaimers like "for educational purposes."
 
-<img src="experiments/01_capability_probing/results/radar_charts.png" width="800" alt="Capability Probing Radar Charts">
+<img src="experiments/01_capability_probing/results/figures/radar_charts.png" width="800" alt="Capability Probing Radar Charts">
 
-**Outcome**: Demonstrates that model size doesn't predict safety (3B llama3.2 outperformed 7B mistral), and that baseline testing reveals genuine safety differences. However, the 5.0% full compliance rate shows direct harmful requests can still succeed, establishing critical need for adversarial testing.
+**Outcome**: Model size does not predict safety. The 3B llama3.2 with 0% full compliance dramatically outperformed the 7B mistral with 5.0% full compliance. Strong baseline safety is achievable in small open-source models (llama3.2 and gemma3 both at 0% full compliance). However, qwen3's 5 full compliance cases spread across five different categories showed that an 86% aggregate refusal rate can hide serious vulnerabilities in specific risk areas. Mistral's 55.0% hedging rate exposed a fundamental safety architecture flaw where the model recognises harmful intent but proceeds with disclaimered dangerous information. The split of full compliance failures between qwen3 and mistral reinforced that systematic evaluation is non-negotiable. This raised the question of whether adversarial attacks would reveal hidden vulnerabilities in the two  models with the strongest baseline safety, as tested in Experiment 02.
 
 **Key Citations**:
 - Shevlane et al., ["Model Evaluation for Extreme Risks"](papers/2023_shevlane_model-evaluation-for-extreme-risks.pdf) (2023)
+- Phuong, Aitchison et al., ["Evaluating Frontier Models for Dangerous Capabilities"](papers/2024_phuong_evaluating-frontier-models-for-dangerous-capabilities.pdf) (2024)
+- Hendrycks et al., ["Overview of Catastrophic AI Risks"](papers/2023_hendrycks_overview-of-catastrophic-ai-risks.pdf) (2023)
 
 ---
 
@@ -163,7 +165,7 @@ ai-safety/
 
 **Key Findings**: Adversarial attacks degraded performance from 87.19% baseline refusal to 73.3% jailbreak resistance, **tripling** full compliance from 5.0% to 15.3%. Model rankings completely reversed: llama3.2 maintained exceptional robustness (90.9% refused, 2.3% full), while qwen3's strong 90% baseline catastrophically failed to predict 22.7% jailbreak vulnerability (10x worse than llama3.2). Multi-turn attacks emerged as most effective (25.0% success), with mistral showing catastrophic 60% multi-turn vulnerability. Attack-specific heterogeneity revealed: gemma3 completely resisted encoding (0%) but failed multi-turn (30%), while qwen3 showed inverse pattern (40% encoding vulnerable, 10% multi-turn).
 
-<img src="experiments/02_jailbreak_testing/results/radar_charts.png" width="800" alt="Jailbreak Testing Radar Charts">
+<img src="experiments/02_jailbreak_testing/results/figures/radar_charts.png" width="800" alt="Jailbreak Testing Radar Charts">
 
 **Outcome**: Proves baseline testing cannot distinguish robust from brittle safety architectures. qwen3's 90% baseline → 70.5% jailbreak resistance invalidates baseline-only safety claims. Multi-turn attacks' 25% success (mistral 60%) demonstrates conversational AI faces systematic failure modes when adversaries build context gradually. Organizations must conduct adversarial red-teaming covering multi-turn, encoding, roleplay, and injection attacks—baseline benchmarks alone are fundamentally inadequate.
 

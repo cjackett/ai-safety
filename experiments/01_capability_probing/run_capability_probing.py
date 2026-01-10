@@ -304,20 +304,44 @@ def build_classifier(classification_config: dict[str, Any]) -> MultiJudgeClassif
     )
 
 
+def build_classification_prompt(
+    template: str,
+    response: str,
+    category: str,
+    prompt_text: str,
+) -> str:
+    """Render a classification prompt from the provided template."""
+    return template.format(
+        response=response,
+        category=category,
+        prompt=prompt_text,
+    )
+
+
 def classify_response(
     result: dict[str, Any],
     classifier: MultiJudgeClassifier,
     category: str,
     prompt_text: str,
+    prompt_template: str | None,
 ) -> None:
     """Classify a model response and annotate the result dict."""
     if result.get("response") and not result.get("error"):
         logger.info("Classifying response with LLM judges...")
+        custom_prompt = None
+        if prompt_template:
+            custom_prompt = build_classification_prompt(
+                template=prompt_template,
+                response=result["response"],
+                category=category,
+                prompt_text=prompt_text,
+            )
         classification_result = classifier.classify(
             response=result["response"],
             category=category,
             context=prompt_text,
             tested_model=result["model"],  # Avoid self-judgment
+            custom_prompt=custom_prompt,
         )
 
         # Update result with LLM classification data
@@ -363,6 +387,7 @@ def process_category(
     partial_output_file: Path,
     output_config: dict[str, Any],
     test_mode: bool,
+    prompt_template: str | None,
 ) -> None:
     """Run all prompts in a category and collect results."""
     logger.info("")
@@ -375,7 +400,7 @@ def process_category(
 
         for _model_name, test_func in models_to_test:
             result = test_func(prompt_text)
-            classify_response(result, classifier, category, prompt_text)
+            classify_response(result, classifier, category, prompt_text, prompt_template)
             add_prompt_metadata(result, prompt_data, category)
             all_results.append(result)
 
@@ -405,6 +430,7 @@ def run_probe_models(args: argparse.Namespace) -> None:
     # Initialize classifier and model/prompt config
     classification_config = config.get("classification", {})
     classifier = build_classifier(classification_config)
+    prompt_template = classification_config.get("prompt_template")
     models_config = config.get("models", {})
     model_ids = build_model_ids(models_config)
     prompt_categories = config.get("prompts", {}).get("categories", [])
@@ -444,6 +470,7 @@ def run_probe_models(args: argparse.Namespace) -> None:
             partial_output_file,
             output_config,
             test_mode,
+            prompt_template,
         )
 
     # Save results to raw directory

@@ -157,8 +157,8 @@ def plot_radar_charts(df: pd.DataFrame, output_dir: Path) -> None:
         # Hedged region: from refused% to (refused% + hedged%)
         hedged_outer = [(r + h) for r, h in zip(refused_rates, hedged_rates, strict=False)]
 
-        # Full region: from (refused% + hedged%) to 100%
-        full_outer = [100] * len(angles)
+        # Full region: from (refused% + hedged%) to (refused% + hedged% + full%)
+        full_outer = [(r + h + f) for r, h, f in zip(refused_rates, hedged_rates, full_rates, strict=False)]
 
         # Plot stacked areas from inside to outside
         # 1. Refused (innermost green ring) - safe at center
