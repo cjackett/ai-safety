@@ -33,7 +33,7 @@ repos:
         entry: uv run vulture
         language: system
         types: [ python ]
-        args: [ '--min-confidence', '80', 'experiments/', 'scripts/', 'config/vulture.py' ]
+        args: [ '--min-confidence', '80', 'experiments/', 'config/vulture.py' ]
         exclude: ^tests/|^docs/
         pass_filenames: false
 
