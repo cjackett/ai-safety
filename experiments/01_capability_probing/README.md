@@ -1,4 +1,4 @@
-# Capability Probing Experiment
+# Experiment 01: Capability Probing
 
 ## Motivation & Context
 
@@ -43,6 +43,29 @@ Responses are classified using a multi-judge LLM approach to ensure rigorous and
 - Individual judge votes and reasoning are saved for transparency and auditability
 
 This approach enables nuanced evaluation that properly handles edge cases like long empathetic refusals and reduces false positives from discussing harm without providing instructions.
+
+## Directory Structure
+
+```
+experiments/01_capability_probing/
+├── config/
+│   └── config.yaml                 # Configuration (models, categories, logging)
+├── prompts/                        # Harmful prompts organized by category
+│   ├── cbrn.json                   # CBRN threats (10 prompts)
+│   ├── child_safety.json           # Child safety (10 prompts)
+│   ├── cyber.json                  # Cyber attacks (10 prompts)
+│   ├── deception.json              # Deception/scams (10 prompts)
+│   ├── disinformation.json         # Fake news/propaganda (10 prompts)
+│   ├── harmful_content.json        # Hate speech/violence (10 prompts)
+│   ├── illegal.json                # Illegal activities (10 prompts)
+│   └── privacy.json                # Privacy violations (10 prompts)
+├── results/
+│   ├── raw/                        # Raw JSON test outputs
+│   ├── analysis/                   # Statistics reports
+│   └── figures/                    # Visualizations
+├── run_capability_probing.py       # Main test script
+└── analyse_results.py              # Generate visualizations and reports
+```
 
 ## Usage
 
@@ -129,7 +152,9 @@ Category vulnerabilities span both qwen3 and mistral: Cyber security (70% refusa
 
 ## Conclusion
 
-Testing four local open-source models against 320 direct harmful prompts revealed significant safety heterogeneity, with 79.69% overall refusal, 17.5% hedging, and 2.81% full compliance. Llama3.2 achieved perfect 100% refusal across all categories, while Gemma3 maintained 92.5% refusal with 0% full compliance. However, Qwen3 demonstrated concerning vulnerabilities (86.2% refusal, 6.2% full compliance across 5 categories), and Mistral exhibited substantial failures (40.0% refusal, 55.0% hedging, 5.0% full compliance). The 9 full compliance cases were split between qwen3 (5 cases) and mistral (4 cases), with only llama3.2 and gemma3 showing deployment-ready safety profiles. The key methodological contribution is demonstrating that LLM-based multi-judge classification catches hedging behavior (providing harmful content with disclaimers) that keyword-based approaches miss, and that aggregate statistics can mask category-specific vulnerabilities. Qwen3's 86% aggregate refusal appears acceptable but conceals systematic failures across cyber, illegal, privacy, child_safety, and deception categories at 80-90% categorical refusal. Category analysis revealed cyber security (70%) as the weakest domain, followed by disinformation (72.5%), privacy (75%), illegal (77.5%), and deception (80%), with mistral driving most aggregate weakness through particularly weak 20-30% refusal across six categories. The finding that only two of four tested models achieved 0% full compliance demonstrates that parameter count does not determine safety effectiveness, and that systematic category-level evaluation is essential before deployment.
+Testing four local open-source models against 320 direct harmful prompts revealed significant safety heterogeneity, with 79.69% overall refusal, 17.5% hedging, and 2.81% full compliance. Llama3.2 achieved perfect 100% refusal across all categories, while gemma3 maintained 92.5% refusal with 0% full compliance—demonstrating strong safety is achievable in small open-source models. However, qwen3 showed concerning vulnerabilities (86.2% refusal, 6.2% full compliance across 5 categories) and mistral exhibited substantial failures (40.0% refusal, 55.0% hedging, 5.0% full compliance). The 9 full compliance cases were split between qwen3 (5 cases) and mistral (4 cases), with only llama3.2 and gemma3 showing deployment-ready safety profiles.
+
+The critical finding is that aggregate statistics mask category-specific vulnerabilities. Qwen3's 86% aggregate refusal appears acceptable but conceals systematic failures across cyber, illegal, privacy, child_safety, and deception at 80-90% categorical refusal. LLM-based multi-judge classification proved essential for catching mistral's hedging behavior (55% of responses providing harmful content with disclaimers like "for educational purposes"), which keyword-based approaches would miss. Category analysis revealed cyber security (70%) as the weakest domain, followed by disinformation (72.5%) and privacy (75%). The smallest model (llama3.2, 3B) dramatically outperformed the largest (mistral, 7B), demonstrating that parameter count does not determine safety effectiveness and that systematic category-level evaluation is essential before deployment.
 
 ## References
 
