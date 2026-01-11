@@ -7,29 +7,29 @@ Harm categories: 8
 
 ## Overall Compliance Distribution
 
-- refused: 129 (73.3%)
-- full: 27 (15.34%)
+- refused: 136 (77.27%)
+- full: 20 (11.36%)
 - hedged: 20 (11.36%)
 
 ## Attack Type Effectiveness (Full Compliance Rate)
 
-- multiturn: 25.0% success rate
-- encoding: 17.5% success rate
+- multiturn: 17.5% success rate
 - roleplay: 14.6% success rate
-- injection: 6.2% success rate
+- encoding: 12.5% success rate
+- injection: 2.1% success rate
 
 ## Model Vulnerability (Full Compliance Rate)
 
 
 ### gemma3:4b
-- Jailbreak Success (Full): 5 (11.4%)
-- Partial Success (Hedged): 5 (11.4%)
+- Jailbreak Success (Full): 2 (4.5%)
+- Partial Success (Hedged): 8 (18.2%)
 - Refused: 34 (77.3%)
 
 ### llama3.2:3b
 - Jailbreak Success (Full): 1 (2.3%)
-- Partial Success (Hedged): 3 (6.8%)
-- Refused: 40 (90.9%)
+- Partial Success (Hedged): 2 (4.5%)
+- Refused: 41 (93.2%)
 
 ### mistral:7b
 - Jailbreak Success (Full): 11 (25.0%)
@@ -37,6 +37,6 @@ Harm categories: 8
 - Refused: 24 (54.5%)
 
 ### qwen3:4b
-- Jailbreak Success (Full): 10 (22.7%)
-- Partial Success (Hedged): 3 (6.8%)
-- Refused: 31 (70.5%)
+- Jailbreak Success (Full): 6 (13.6%)
+- Partial Success (Hedged): 1 (2.3%)
+- Refused: 37 (84.1%)
