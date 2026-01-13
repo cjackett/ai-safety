@@ -1,56 +1,88 @@
-"""
-Analysis and visualization for behavioral safety evaluation results.
+# ruff: noqa: INP001
+"""Analysis and visualization for behavioral safety evaluation results.
 
 Generates:
 - Alignment distribution charts by model
 - Category-specific heatmaps
-- Behavioral flag analysis
-- Detailed findings per category
+- Behavioral concern breakdown
+- Radar charts showing performance across categories
+- Detailed statistics report
+
+Reads from: results/raw/
+Saves to: results/figures/ and results/analysis/
 """
+
 
 import argparse
 import json
+import logging
 from collections import defaultdict
-from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
+import yaml
 
 # Script directory
-SCRIPT_DIR = Path(__file__).parent
+SCRIPT_DIR = Path(__file__).parent.resolve()
+
+# Logger
+logger = logging.getLogger(__name__)
+
+MIN_LABEL_PERCENT = 3.0
+RADAR_MAX_PERCENT = 100
 
 
-def load_results(results_file: Path = None) -> list[dict[str, Any]]:
+def setup_logging() -> None:
+    """Setup basic logging for analysis script."""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+
+def load_config(config_path: Path | None = None) -> dict[str, Any]:
+    """Load configuration from YAML file."""
+    if config_path is None:
+        config_path = SCRIPT_DIR / "config" / "config.yaml"
+
+    with config_path.open() as f:
+        return cast("dict[str, Any]", yaml.safe_load(f))
+
+
+def load_results(results_file: Path | None = None) -> list[dict[str, Any]]:
     """Load behavioral evaluation results from JSON file."""
     if results_file is None:
-        # Find most recent results file
-        results_dir = SCRIPT_DIR / "results"
+        # Find most recent results file in raw/ directory
+        results_dir = SCRIPT_DIR / "results" / "raw"
+
+        if not results_dir.exists():
+            msg = f"Results directory not found: {results_dir}. Run run_behavioral_evals.py first to generate results."
+            raise FileNotFoundError(msg)
+
         json_files = list(results_dir.glob("behavioral_eval*.json"))
 
         if not json_files:
-            raise FileNotFoundError(
-                f"No results files found in {results_dir}. "
-                "Run behavioral_eval.py first to generate results."
-            )
+            msg = f"No results files found in {results_dir}. Run run_behavioral_evals.py first to generate results."
+            raise FileNotFoundError(msg)
 
         results_file = max(json_files, key=lambda p: p.stat().st_mtime)
-        print(f"Auto-detected results file: {results_file.name}")
+        logger.info(f"Auto-detected results file: {results_file.name}")
 
-    with open(results_file, "r") as f:
-        return json.load(f)
+    with results_file.open() as f:
+        return cast("list[dict[str, Any]]", json.load(f))
 
 
-def compute_alignment_stats(results: list[dict[str, Any]]) -> dict:
+def compute_alignment_stats(results: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
     """Compute overall alignment statistics by model."""
-    model_stats = defaultdict(lambda: {
-        "total": 0,
-        "aligned": 0,
-        "concerning": 0,
-        "problematic": 0,
-    })
+    model_stats: defaultdict[str, dict[str, int]] = defaultdict(
+        lambda: {
+            "total": 0,
+            "aligned": 0,
+            "concerning": 0,
+            "problematic": 0,
+        },
+    )
 
     for result in results:
         if result.get("error"):
@@ -59,26 +91,32 @@ def compute_alignment_stats(results: list[dict[str, Any]]) -> dict:
         model = result.get("model", "unknown")
         alignment = result.get("behavioral_alignment")
 
-        model_stats[model]["total"] += 1
-
+        # Only count results with valid classifications
         if alignment == "aligned":
+            model_stats[model]["total"] += 1
             model_stats[model]["aligned"] += 1
         elif alignment == "concerning":
+            model_stats[model]["total"] += 1
             model_stats[model]["concerning"] += 1
         elif alignment == "problematic":
+            model_stats[model]["total"] += 1
             model_stats[model]["problematic"] += 1
 
-    return model_stats
+    return dict(model_stats)
 
 
-def compute_category_stats(results: list[dict[str, Any]]) -> dict:
+def compute_category_stats(results: list[dict[str, Any]]) -> dict[str, dict[str, dict[str, int]]]:
     """Compute alignment statistics by category and model."""
-    category_stats = defaultdict(lambda: defaultdict(lambda: {
-        "aligned": 0,
-        "concerning": 0,
-        "problematic": 0,
-        "total": 0,
-    }))
+    category_stats: defaultdict[str, defaultdict[str, dict[str, int]]] = defaultdict(
+        lambda: defaultdict(
+            lambda: {
+                "aligned": 0,
+                "concerning": 0,
+                "problematic": 0,
+                "total": 0,
+            },
+        ),
+    )
 
     for result in results:
         if result.get("error"):
@@ -88,21 +126,23 @@ def compute_category_stats(results: list[dict[str, Any]]) -> dict:
         category = result.get("category", "unknown")
         alignment = result.get("behavioral_alignment")
 
-        category_stats[category][model]["total"] += 1
-
+        # Only count results with valid classifications
         if alignment == "aligned":
+            category_stats[category][model]["total"] += 1
             category_stats[category][model]["aligned"] += 1
         elif alignment == "concerning":
+            category_stats[category][model]["total"] += 1
             category_stats[category][model]["concerning"] += 1
         elif alignment == "problematic":
+            category_stats[category][model]["total"] += 1
             category_stats[category][model]["problematic"] += 1
 
-    return category_stats
+    return {category: dict(model_stats) for category, model_stats in category_stats.items()}
 
 
-def compute_flag_stats(results: list[dict[str, Any]]) -> dict:
+def compute_flag_stats(results: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
     """Compute behavioral flag statistics."""
-    flag_stats = defaultdict(lambda: defaultdict(int))
+    flag_stats: defaultdict[str, defaultdict[str, int]] = defaultdict(lambda: defaultdict(int))
 
     for result in results:
         if result.get("error"):
@@ -114,13 +154,10 @@ def compute_flag_stats(results: list[dict[str, Any]]) -> dict:
         for flag in flags:
             flag_stats[model][flag] += 1
 
-    return flag_stats
+    return {model: dict(stats) for model, stats in flag_stats.items()}
 
 
-def plot_alignment_distribution(
-    model_stats: dict,
-    output_dir: Path
-) -> None:
+def plot_alignment_distribution(model_stats: dict[str, dict[str, int]], output_dir: Path) -> None:
     """Create stacked bar chart of alignment distribution by model."""
     models = sorted(model_stats.keys())
     aligned = []
@@ -141,56 +178,53 @@ def plot_alignment_distribution(
             problematic.append(0)
 
     # Create plot
-    fig, ax = plt.subplots(figsize=(10, 6))
+    _fig, ax = plt.subplots(figsize=(10, 6))
 
     x = np.arange(len(models))
     width = 0.6
 
     # Stack bars
-    p1 = ax.bar(x, aligned, width, label='Aligned', color='#2ecc71')
-    p2 = ax.bar(x, concerning, width, bottom=aligned, label='Concerning', color='#f39c12')
-    p3 = ax.bar(x, problematic, width, bottom=np.array(aligned) + np.array(concerning),
-                label='Problematic', color='#e74c3c')
+    ax.bar(x, aligned, width, label="Aligned", color="#2ecc71")
+    ax.bar(x, concerning, width, bottom=aligned, label="Concerning", color="#f39c12")
+    ax.bar(
+        x,
+        problematic,
+        width,
+        bottom=np.array(aligned) + np.array(concerning),
+        label="Problematic",
+        color="#e74c3c",
+    )
 
     # Customize
-    ax.set_ylabel('Percentage (%)', fontsize=12)
-    ax.set_title('Behavioral Alignment Distribution by Model', fontsize=14)
+    ax.set_ylabel("Percentage (%)", fontsize=12)
+    ax.set_title("Behavioral Alignment Distribution by Model", fontsize=14)
     ax.set_xticks(x)
-    ax.set_xticklabels([m.split('/')[-1] for m in models], rotation=0)
-    ax.legend(loc='upper right')
+    ax.set_xticklabels([m.split("/")[-1] for m in models], rotation=0)
+    ax.legend(loc="upper right")
     ax.set_ylim(0, 100)
 
     # Add value labels
     for i, model in enumerate(models):
         total = model_stats[model]["total"]
         if total > 0:
-            y_offset = 0
-            for value, color in [(aligned[i], '#2ecc71'),
-                                 (concerning[i], '#f39c12'),
-                                 (problematic[i], '#e74c3c')]:
-                if value > 3:  # Only show label if segment is large enough
-                    ax.text(i, y_offset + value/2, f'{value:.1f}%',
-                           ha='center', va='center', fontsize=10)
+            y_offset: float = 0.0
+            for value in (aligned[i], concerning[i], problematic[i]):
+                if value > MIN_LABEL_PERCENT:  # Only show label if segment is large enough
+                    ax.text(i, y_offset + value / 2, f"{value:.1f}%", ha="center", va="center", fontsize=10)
                 y_offset += value
 
     plt.tight_layout()
-    plt.savefig(output_dir / "alignment_distribution.png", dpi=300, bbox_inches='tight')
+    output_file = output_dir / "alignment_distribution.png"
+    plt.savefig(output_file, dpi=300, bbox_inches="tight")
     plt.close()
 
-    print("  ✓ alignment_distribution.png")
+    logger.info(f"  ✓ {output_file.name}")
 
 
-def plot_category_heatmap(
-    category_stats: dict,
-    output_dir: Path
-) -> None:
+def plot_category_heatmap(category_stats: dict[str, dict[str, dict[str, int]]], output_dir: Path) -> None:
     """Create heatmap of alignment rates by category and model."""
     categories = sorted(category_stats.keys())
-    models = sorted(set(
-        model
-        for category in category_stats.values()
-        for model in category.keys()
-    ))
+    models = sorted({model for category in category_stats.values() for model in category})
 
     # Compute alignment percentages
     data = []
@@ -207,37 +241,35 @@ def plot_category_heatmap(
         data.append(row)
 
     # Create heatmap
-    fig, ax = plt.subplots(figsize=(10, 7))
+    _fig, ax = plt.subplots(figsize=(10, 7))
 
     # Use reversed colormap so green = high alignment
     sns.heatmap(
         data,
         annot=True,
-        fmt='.1f',
-        cmap='RdYlGn',
-        xticklabels=[m.split('/')[-1] for m in models],
-        yticklabels=[c.replace('_', ' ').title() for c in categories],
+        fmt=".1f",
+        cmap="RdYlGn",
+        xticklabels=[m.split("/")[-1] for m in models],
+        yticklabels=[c.replace("_", " ").title() for c in categories],
         vmin=0,
         vmax=100,
-        cbar_kws={'label': 'Alignment Rate (%)'},
-        ax=ax
+        cbar_kws={"label": "Alignment Rate (%)"},
+        ax=ax,
     )
 
-    ax.set_title('Behavioral Alignment by Category and Model', fontsize=14)
-    ax.set_xlabel('Model', fontsize=12)
-    ax.set_ylabel('Behavioral Category', fontsize=12)
+    ax.set_title("Behavioral Alignment by Category and Model", fontsize=14)
+    ax.set_xlabel("Model", fontsize=12)
+    ax.set_ylabel("Behavioral Category", fontsize=12)
 
     plt.tight_layout()
-    plt.savefig(output_dir / "category_heatmap.png", dpi=300, bbox_inches='tight')
+    output_file = output_dir / "category_heatmap.png"
+    plt.savefig(output_file, dpi=300, bbox_inches="tight")
     plt.close()
 
-    print("  ✓ category_heatmap.png")
+    logger.info(f"  ✓ {output_file.name}")
 
 
-def plot_concern_breakdown(
-    category_stats: dict,
-    output_dir: Path
-) -> None:
+def plot_concern_breakdown(category_stats: dict[str, dict[str, dict[str, int]]], output_dir: Path) -> None:
     """Create stacked bar chart showing concerning/problematic issues by category."""
     categories = sorted(category_stats.keys())
 
@@ -257,47 +289,44 @@ def plot_concern_breakdown(
         problematic_counts.append(problematic)
 
     # Create plot
-    fig, ax = plt.subplots(figsize=(10, 6))
+    _fig, ax = plt.subplots(figsize=(10, 6))
 
     x = np.arange(len(categories))
     width = 0.6
 
-    p1 = ax.bar(x, concerning_counts, width, label='Concerning', color='#f39c12')
-    p2 = ax.bar(x, problematic_counts, width, bottom=concerning_counts,
-                label='Problematic', color='#e74c3c')
+    ax.bar(x, concerning_counts, width, label="Concerning", color="#f39c12")
+    ax.bar(x, problematic_counts, width, bottom=concerning_counts, label="Problematic", color="#e74c3c")
 
     # Customize
-    ax.set_ylabel('Number of Issues', fontsize=12)
-    ax.set_title('Behavioral Concerns by Category', fontsize=14)
+    ax.set_ylabel("Number of Issues", fontsize=12)
+    ax.set_title("Behavioral Concerns by Category", fontsize=14)
     ax.set_xticks(x)
-    ax.set_xticklabels([c.replace('_', ' ').title() for c in categories], rotation=45, ha='right')
-    ax.legend(loc='upper right')
+    ax.set_xticklabels([c.replace("_", " ").title() for c in categories], rotation=45, ha="right")
+    ax.legend(loc="upper right")
 
     # Add value labels
     for i in range(len(categories)):
         if concerning_counts[i] > 0:
-            ax.text(i, concerning_counts[i]/2, str(concerning_counts[i]),
-                   ha='center', va='center', fontsize=10)
+            ax.text(i, concerning_counts[i] / 2, str(concerning_counts[i]), ha="center", va="center", fontsize=10)
         if problematic_counts[i] > 0:
-            ax.text(i, concerning_counts[i] + problematic_counts[i]/2,
-                   str(problematic_counts[i]),
-                   ha='center', va='center', fontsize=10)
+            ax.text(
+                i,
+                concerning_counts[i] + problematic_counts[i] / 2,
+                str(problematic_counts[i]),
+                ha="center",
+                va="center",
+                fontsize=10,
+            )
 
     plt.tight_layout()
-    plt.savefig(output_dir / "concern_breakdown.png", dpi=300, bbox_inches='tight')
+    output_file = output_dir / "concern_breakdown.png"
+    plt.savefig(output_file, dpi=300, bbox_inches="tight")
     plt.close()
 
-    print("  ✓ concern_breakdown.png")
+    logger.info(f"  ✓ {output_file.name}")
 
 
-def plot_radar_charts(
-    results: list[dict[str, Any]],
-    output_dir: Path
-) -> None:
-    """Plot radar charts with stacked alignment rings showing all alignment types."""
-    # Extract data from results
-    import pandas as pd
-
+def _build_radar_dataframe(results: list[dict[str, Any]]) -> pd.DataFrame:
     data = []
     for result in results:
         if result.get("error"):
@@ -307,329 +336,300 @@ def plot_radar_charts(
         category = result.get("category", "unknown")
         alignment = result.get("behavioral_alignment")
 
-        data.append({
-            "model": model,
-            "category": category,
-            "alignment": alignment
-        })
+        # Only include results with valid classifications
+        if alignment in ["aligned", "concerning", "problematic"]:
+            data.append({"model": model, "category": category, "alignment": alignment})
 
-    df = pd.DataFrame(data)
+    return pd.DataFrame(data)
+
+
+def _calculate_radar_angles(num_categories: int) -> list[float]:
+    angles = [float(x) for x in np.linspace(0, 2 * np.pi, num_categories, endpoint=False)]
+    angles += angles[:1]
+    return angles
+
+
+def _calculate_alignment_rates(
+    df: pd.DataFrame,
+    model: str,
+    categories: list[str],
+) -> tuple[list[float], list[float], list[float]]:
+    aligned_rates = []
+    concerning_rates = []
+    problematic_rates = []
+
+    for category in categories:
+        subset = df[(df["model"] == model) & (df["category"] == category)]
+        total = len(subset)
+
+        if total > 0:
+            aligned = len(subset[subset["alignment"] == "aligned"])
+            concerning = len(subset[subset["alignment"] == "concerning"])
+            problematic = len(subset[subset["alignment"] == "problematic"])
+
+            aligned_rates.append((aligned / total) * 100)
+            concerning_rates.append((concerning / total) * 100)
+            problematic_rates.append((problematic / total) * 100)
+        else:
+            aligned_rates.append(0)
+            concerning_rates.append(0)
+            problematic_rates.append(0)
+
+    return aligned_rates, concerning_rates, problematic_rates
+
+
+def _format_radar_stats(df: pd.DataFrame, model: str) -> str:
+    total_tests = len(df[df["model"] == model])
+    aligned_count = len(df[(df["model"] == model) & (df["alignment"] == "aligned")])
+    concerning_count = len(df[(df["model"] == model) & (df["alignment"] == "concerning")])
+    problematic_count = len(df[(df["model"] == model) & (df["alignment"] == "problematic")])
+
+    return (
+        f"A:{aligned_count}/{total_tests} ({aligned_count/total_tests*100:.1f}%) "
+        f"C:{concerning_count} ({concerning_count/total_tests*100:.1f}%) "
+        f"P:{problematic_count} ({problematic_count/total_tests*100:.1f}%)"
+    )
+
+
+def plot_radar_charts(results: list[dict[str, Any]], output_dir: Path) -> None:
+    """Plot radar charts with stacked alignment rings showing all alignment types."""
+    df = _build_radar_dataframe(results)
 
     models = sorted(df["model"].unique())
     categories = sorted(df["category"].unique())
-    num_categories = len(categories)
-    num_models = len(models)
+    angles = _calculate_radar_angles(len(categories))
 
-    # Calculate angles for each category
-    angles = np.linspace(0, 2 * np.pi, num_categories, endpoint=False).tolist()
-    angles += angles[:1]  # Complete the circle
-
-    # Create 2x2 polar subplots
-    fig, axes = plt.subplots(2, 2, figsize=(14, 14),
-                             subplot_kw=dict(projection='polar'))
-
-    # Flatten axes for easy iteration
+    fig, axes = plt.subplots(2, 2, figsize=(14, 14), subplot_kw={"projection": "polar"})
     axes = axes.flatten()
 
-    # Colors for each alignment type
-    colors = {
-        "aligned": "#2ecc71",      # Green
-        "concerning": "#f39c12",   # Orange
-        "problematic": "#e74c3c"   # Red
-    }
+    colors = {"aligned": "#2ecc71", "concerning": "#f39c12", "problematic": "#e74c3c"}
 
     for idx, model in enumerate(models):
         ax = axes[idx]
 
-        # Calculate alignment rates for each category
-        aligned_rates = []
-        concerning_rates = []
-        problematic_rates = []
+        aligned_rates, concerning_rates, problematic_rates = _calculate_alignment_rates(df, model, categories)
 
-        for category in categories:
-            subset = df[(df["model"] == model) & (df["category"] == category)]
-            total = len(subset)
-
-            if total > 0:
-                aligned = len(subset[subset["alignment"] == "aligned"])
-                concerning = len(subset[subset["alignment"] == "concerning"])
-                problematic = len(subset[subset["alignment"] == "problematic"])
-
-                # Calculate percentages
-                aligned_rates.append((aligned / total) * 100)
-                concerning_rates.append((concerning / total) * 100)
-                problematic_rates.append((problematic / total) * 100)
-            else:
-                aligned_rates.append(0)
-                concerning_rates.append(0)
-                problematic_rates.append(0)
-
-        # Close the polygons
         aligned_rates += aligned_rates[:1]
         concerning_rates += concerning_rates[:1]
         problematic_rates += problematic_rates[:1]
 
-        # Create stacked rings from center outward:
-        # 1. Inner ring (0% to aligned%): aligned area (green) - safe at center
-        # 2. Middle ring (aligned% to aligned%+concerning%): concerning area (orange)
-        # 3. Outer ring (aligned%+concerning% to 100%): problematic (red) - dangerous at edge
-
-        # Calculate cumulative percentages for stacking
-        center = [0] * len(angles)
+        center = [0.0] * len(angles)
         aligned_outer = aligned_rates[:]
-        concerning_outer = [(a + c) for a, c in zip(aligned_rates, concerning_rates)]
-        problematic_outer = [100] * len(angles)
+        concerning_outer = [a + c for a, c in zip(aligned_rates, concerning_rates, strict=True)]
+        problematic_outer = [RADAR_MAX_PERCENT] * len(angles)
 
-        # Plot stacked areas from inside to outside
-        ax.fill_between(angles, center, aligned_outer,
-                        alpha=0.7, color=colors["aligned"], label='Aligned')
-        ax.fill_between(angles, aligned_outer, concerning_outer,
-                        alpha=0.7, color=colors["concerning"], label='Concerning')
-        ax.fill_between(angles, concerning_outer, problematic_outer,
-                        alpha=0.7, color=colors["problematic"], label='Problematic')
+        ax.fill_between(angles, center, aligned_outer, alpha=0.7, color=colors["aligned"], label="Aligned")
+        ax.fill_between(
+            angles,
+            aligned_outer,
+            concerning_outer,
+            alpha=0.7,
+            color=colors["concerning"],
+            label="Concerning",
+        )
+        ax.fill_between(
+            angles,
+            concerning_outer,
+            problematic_outer,
+            alpha=0.7,
+            color=colors["problematic"],
+            label="Problematic",
+        )
 
-        # Add edge lines for clarity
-        ax.plot(angles, aligned_outer, 'o-', linewidth=1.5, color='#27ae60', alpha=0.8, markersize=4)
-        ax.plot(angles, concerning_outer, 'o-', linewidth=1.5, color='#e67e22', alpha=0.8, markersize=4)
+        ax.plot(angles, aligned_outer, "o-", linewidth=1.5, color="#27ae60", alpha=0.8, markersize=4)
+        ax.plot(angles, concerning_outer, "o-", linewidth=1.5, color="#e67e22", alpha=0.8, markersize=4)
 
-        # Customize
         ax.set_xticks(angles[:-1])
-        ax.set_xticklabels([c.replace('_', ' ').title() for c in categories], size=10)
-        ax.set_ylim(0, 100)
+        ax.set_xticklabels([c.replace("_", " ").title() for c in categories], size=10)
+        ax.set_ylim(0, RADAR_MAX_PERCENT)
         ax.set_yticks([20, 40, 60, 80, 100])
-        ax.set_yticklabels(['20%', '40%', '60%', '80%', '100%'], size=9.5)
-        ax.grid(True, linestyle='-', alpha=0.5, linewidth=0.7, color='gray')
+        ax.set_yticklabels(["20%", "40%", "60%", "80%", "100%"], size=9.5)
+        ax.grid(True, linestyle="-", alpha=0.5, linewidth=0.7, color="gray")
 
-        # Title with alignment summary
-        total_tests = len(df[df["model"] == model])
-        aligned_count = len(df[(df["model"] == model) & (df["alignment"] == "aligned")])
-        concerning_count = len(df[(df["model"] == model) & (df["alignment"] == "concerning")])
-        problematic_count = len(df[(df["model"] == model) & (df["alignment"] == "problematic")])
+        ax.text(0.5, 1.17, model, transform=ax.transAxes, ha="center", va="top", fontsize=12, fontweight="bold")
+        ax.text(0.5, 1.12, _format_radar_stats(df, model), transform=ax.transAxes, ha="center", va="top", fontsize=9)
 
-        # Set model name as bold text at top
-        ax.text(0.5, 1.17, model, transform=ax.transAxes,
-                ha='center', va='top', fontsize=12, fontweight='bold')
-
-        # Add stats below the model name
-        stats_text = f"A:{aligned_count}/{total_tests} ({aligned_count/total_tests*100:.1f}%) "
-        stats_text += f"C:{concerning_count} ({concerning_count/total_tests*100:.1f}%) "
-        stats_text += f"P:{problematic_count} ({problematic_count/total_tests*100:.1f}%)"
-        ax.text(0.5, 1.12, stats_text, transform=ax.transAxes,
-                ha='center', va='top', fontsize=9)
-
-    # Hide unused subplots if fewer than 4 models
-    for idx in range(num_models, 4):
+    for idx in range(len(models), 4):
         axes[idx].set_visible(False)
 
-    # Add legend to the figure (top right, outside all plots)
     handles, labels = axes[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(0.98, 0.98),
-              fontsize=11, frameon=True, title='Alignment Type')
+    fig.legend(
+        handles,
+        labels,
+        loc="upper right",
+        bbox_to_anchor=(0.98, 0.98),
+        fontsize=11,
+        frameon=True,
+        title="Alignment Type",
+    )
 
-    plt.suptitle("Behavioral Alignment Performance: Category-Specific Alignment Distribution",
-                 fontsize=14, y=0.99, fontweight='bold')
-    plt.tight_layout(rect=[0, 0, 0.88, 0.97])
-    plt.savefig(output_dir / "radar_charts.png", dpi=300, bbox_inches="tight")
+    plt.suptitle(
+        "Behavioral Alignment Performance: Category-Specific Alignment Distribution",
+        fontsize=14,
+        y=0.99,
+        fontweight="bold",
+    )
+    plt.tight_layout(rect=(0, 0, 0.88, 0.97))
+
+    output_file = output_dir / "radar_charts.png"
+    plt.savefig(output_file, dpi=300, bbox_inches="tight")
     plt.close()
 
-    print("  ✓ radar_charts.png")
+    logger.info(f"  ✓ {output_file.name}")
 
 
-def plot_flag_analysis(
-    flag_stats: dict,
-    output_dir: Path
+def _write_overall_alignment_section(f: TextIO, model_stats: dict[str, dict[str, int]]) -> None:
+    total_tests = sum(stats["total"] for stats in model_stats.values())
+    total_aligned = sum(stats["aligned"] for stats in model_stats.values())
+    total_concerning = sum(stats["concerning"] for stats in model_stats.values())
+    total_problematic = sum(stats["problematic"] for stats in model_stats.values())
+
+    f.write("## Overall Alignment Distribution\n\n")
+    f.write(f"- Aligned: {total_aligned} ({total_aligned/total_tests*100:.1f}%)\n")
+    f.write(f"- Concerning: {total_concerning} ({total_concerning/total_tests*100:.1f}%)\n")
+    f.write(f"- Problematic: {total_problematic} ({total_problematic/total_tests*100:.1f}%)\n\n")
+
+
+def _write_model_performance_section(f: TextIO, model_stats: dict[str, dict[str, int]]) -> None:
+    f.write("## Model Performance\n\n")
+
+    for model in sorted(model_stats.keys()):
+        stats = model_stats[model]
+        total = stats["total"]
+
+        if total == 0:
+            continue
+
+        model_name = model.replace("ollama/", "")
+
+        f.write(f"\n### {model_name}\n")
+        f.write(f"- Total: {total}\n")
+        f.write(f"- Aligned: {stats['aligned']} ({stats['aligned']/total*100:.1f}%)\n")
+        f.write(f"- Concerning: {stats['concerning']} ({stats['concerning']/total*100:.1f}%)\n")
+        f.write(f"- Problematic: {stats['problematic']} ({stats['problematic']/total*100:.1f}%)\n")
+
+
+def _write_category_analysis_section(
+    f: TextIO,
+    category_stats: dict[str, dict[str, dict[str, int]]],
 ) -> None:
-    """Create horizontal bar chart of top behavioral flags."""
-    # Aggregate flags across all models
-    all_flags = defaultdict(int)
+    f.write("\n## Category Analysis\n\n")
 
-    for model_flags in flag_stats.values():
-        for flag, count in model_flags.items():
-            all_flags[flag] += count
+    for category in sorted(category_stats.keys()):
+        cat_aligned = sum(stats["aligned"] for stats in category_stats[category].values())
+        cat_concerning = sum(stats["concerning"] for stats in category_stats[category].values())
+        cat_problematic = sum(stats["problematic"] for stats in category_stats[category].values())
+        cat_total = sum(stats["total"] for stats in category_stats[category].values())
 
-    # Get top 10 flags
-    top_flags = sorted(all_flags.items(), key=lambda x: x[1], reverse=True)[:10]
+        if cat_total == 0:
+            continue
 
-    if not top_flags:
-        print("  ⚠ No behavioral flags to visualize")
-        return
+        category_name = category.replace("_", " ").title()
+        alignment_rate = cat_aligned / cat_total * 100
 
-    flags, counts = zip(*top_flags)
+        f.write(f"\n### {category_name}\n")
+        f.write(f"- Overall alignment rate: {alignment_rate:.1f}%\n")
+        f.write(f"- Concerning: {cat_concerning}/{cat_total}\n")
+        f.write(f"- Problematic: {cat_problematic}/{cat_total}\n\n")
 
-    # Create plot
-    fig, ax = plt.subplots(figsize=(10, 7))
+        worst_model = None
+        worst_rate = 100.0
 
-    y_pos = np.arange(len(flags))
+        for model, stats in category_stats[category].items():
+            if stats["total"] > 0:
+                aligned_rate = stats["aligned"] / stats["total"] * 100
+                if aligned_rate < worst_rate:
+                    worst_rate = aligned_rate
+                    worst_model = model.replace("ollama/", "")
 
-    # Color code based on flag type
-    colors = []
-    for flag in flags:
-        if any(word in flag for word in ['problematic', 'fabricate', 'deception', 'power', 'resist']):
-            colors.append('#e74c3c')  # Red for problematic
-        elif any(word in flag for word in ['concerning', 'overconfident', 'spurious']):
-            colors.append('#f39c12')  # Orange for concerning
-        else:
-            colors.append('#3498db')  # Blue for neutral/aligned
-
-    ax.barh(y_pos, counts, color=colors)
-
-    # Customize
-    ax.set_yticks(y_pos)
-    ax.set_yticklabels([f.replace('_', ' ').title() for f in flags])
-    ax.invert_yaxis()
-    ax.set_xlabel('Occurrences', fontsize=12)
-    ax.set_title('Top Behavioral Flags Detected', fontsize=14)
-
-    # Add value labels
-    for i, count in enumerate(counts):
-        ax.text(count + 0.5, i, str(count), va='center', fontsize=10)
-
-    plt.tight_layout()
-    plt.savefig(output_dir / "flag_analysis.png", dpi=300, bbox_inches='tight')
-    plt.close()
-
-    print("  ✓ flag_analysis.png")
+        if worst_model:
+            f.write(f"- Most vulnerable model: {worst_model} ({worst_rate:.1f}% aligned)\n")
 
 
 def generate_statistics_report(
-    results: list[dict[str, Any]],
-    model_stats: dict,
-    category_stats: dict,
-    output_dir: Path
+    model_stats: dict[str, dict[str, int]],
+    category_stats: dict[str, dict[str, dict[str, int]]],
+    output_dir: Path,
 ) -> None:
     """Generate statistics report in markdown format."""
     report_file = output_dir / "statistics_report.md"
 
-    # Count total tests
     total_tests = sum(stats["total"] for stats in model_stats.values())
     num_models = len([m for m in model_stats.values() if m["total"] > 0])
     num_categories = len(category_stats)
 
-    with open(report_file, "w") as f:
+    with report_file.open("w") as f:
         f.write("# Behavioral Safety Evaluation Analysis Report\n\n")
-
         f.write(f"Total tests: {total_tests}\n")
         f.write(f"Models tested: {num_models}\n")
         f.write(f"Behavioral categories: {num_categories}\n\n")
 
-        # Overall alignment distribution
-        f.write("## Overall Alignment Distribution\n\n")
+        _write_overall_alignment_section(f, model_stats)
+        _write_model_performance_section(f, model_stats)
+        _write_category_analysis_section(f, category_stats)
 
-        total_aligned = sum(stats["aligned"] for stats in model_stats.values())
-        total_concerning = sum(stats["concerning"] for stats in model_stats.values())
-        total_problematic = sum(stats["problematic"] for stats in model_stats.values())
-
-        f.write(f"- aligned: {total_aligned} ({total_aligned/total_tests*100:.1f}%)\n")
-        f.write(f"- concerning: {total_concerning} ({total_concerning/total_tests*100:.1f}%)\n")
-        f.write(f"- problematic: {total_problematic} ({total_problematic/total_tests*100:.1f}%)\n\n")
-
-        # Model performance
-        f.write("## Model Performance\n\n")
-
-        for model in sorted(model_stats.keys()):
-            stats = model_stats[model]
-            total = stats["total"]
-
-            if total == 0:
-                continue
-
-            # Clean up model name
-            model_name = model.replace("ollama/", "")
-
-            f.write(f"\n### {model_name}\n")
-            f.write(f"- Total: {total}\n")
-            f.write(f"- Aligned: {stats['aligned']} ({stats['aligned']/total*100:.1f}%)\n")
-            f.write(f"- Concerning: {stats['concerning']} ({stats['concerning']/total*100:.1f}%)\n")
-            f.write(f"- Problematic: {stats['problematic']} ({stats['problematic']/total*100:.1f}%)\n")
-
-        # Category analysis
-        f.write("\n## Category Analysis\n\n")
-
-        for category in sorted(category_stats.keys()):
-            # Calculate overall category stats
-            cat_aligned = sum(stats["aligned"] for stats in category_stats[category].values())
-            cat_concerning = sum(stats["concerning"] for stats in category_stats[category].values())
-            cat_problematic = sum(stats["problematic"] for stats in category_stats[category].values())
-            cat_total = sum(stats["total"] for stats in category_stats[category].values())
-
-            if cat_total == 0:
-                continue
-
-            category_name = category.replace('_', ' ').title()
-            alignment_rate = cat_aligned / cat_total * 100
-
-            f.write(f"\n### {category_name}\n")
-            f.write(f"- Overall alignment rate: {alignment_rate:.1f}%\n")
-            f.write(f"- Concerning: {cat_concerning}/{cat_total}\n")
-            f.write(f"- Problematic: {cat_problematic}/{cat_total}\n\n")
-
-            # Find most vulnerable model in this category
-            worst_model = None
-            worst_rate = 100.0
-
-            for model, stats in category_stats[category].items():
-                if stats["total"] > 0:
-                    aligned_rate = stats["aligned"] / stats["total"] * 100
-                    if aligned_rate < worst_rate:
-                        worst_rate = aligned_rate
-                        worst_model = model.replace("ollama/", "")
-
-            if worst_model:
-                f.write(f"- Most vulnerable model: {worst_model} ({worst_rate:.1f}% aligned)\n")
-
-    print(f"  ✓ statistics_report.md")
+    logger.info(f"  ✓ {report_file.name}")
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Analyse behavioral evaluation results and generate visualizations"
-    )
+def main() -> None:
+    """Main entry point."""
+    parser = argparse.ArgumentParser(description="Analyse behavioral evaluation results and generate visualizations")
     parser.add_argument(
         "results_file",
         nargs="?",
         type=Path,
-        help="Path to results JSON file (default: most recent in results/)"
+        help="Path to results JSON file (default: most recent in results/raw/)",
     )
 
     args = parser.parse_args()
 
-    # Load results
-    results = load_results(args.results_file)
+    # Setup logging
+    setup_logging()
 
-    print(f"\nLoaded {len(results)} test results")
-    print(f"\nComputing statistics...")
+    # Load configuration
+    config = load_config()
+
+    # Load results
+    logger.info("Loading results...")
+    results = load_results(args.results_file)
+    logger.info(f"Loaded {len(results)} test results")
 
     # Compute statistics
+    logger.info("Computing statistics...")
     model_stats = compute_alignment_stats(results)
     category_stats = compute_category_stats(results)
-    flag_stats = compute_flag_stats(results)
+    _flag_stats = compute_flag_stats(results)
 
-    # Ensure output directory exists
-    output_dir = SCRIPT_DIR / "results"
-    output_dir.mkdir(exist_ok=True)
+    # Ensure output directories exist
+    figures_dir = SCRIPT_DIR / config["paths"]["figures"]
+    analysis_dir = SCRIPT_DIR / config["paths"]["analysis"]
+    figures_dir.mkdir(parents=True, exist_ok=True)
+    analysis_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"\nGenerating visualizations...")
+    logger.info("Generating visualizations...")
 
-    # Generate plots
-    plot_alignment_distribution(model_stats, output_dir)
-    plot_category_heatmap(category_stats, output_dir)
-    plot_concern_breakdown(category_stats, output_dir)
-    plot_flag_analysis(flag_stats, output_dir)
-    plot_radar_charts(results, output_dir)
+    # Generate plots (save to figures/)
+    plot_alignment_distribution(model_stats, figures_dir)
+    plot_category_heatmap(category_stats, figures_dir)
+    plot_concern_breakdown(category_stats, figures_dir)
+    plot_radar_charts(results, figures_dir)
 
-    # Generate statistics report
-    generate_statistics_report(results, model_stats, category_stats, output_dir)
+    # Generate statistics report (save to analysis/)
+    generate_statistics_report(model_stats, category_stats, analysis_dir)
 
-    print(f"\n{'='*60}")
-    print("Analysis complete!")
-    print(f"{'='*60}\n")
-    print(f"Results saved to: {output_dir}/")
-    print("\nGenerated files:")
-    print("  - alignment_distribution.png")
-    print("  - category_heatmap.png")
-    print("  - concern_breakdown.png")
-    print("  - flag_analysis.png")
-    print("  - statistics_report.md")
+    logger.info("=" * 60)
+    logger.info("Analysis complete!")
+    logger.info("=" * 60)
+    logger.info(f"Figures saved to: {figures_dir}/")
+    logger.info(f"Analysis saved to: {analysis_dir}/")
+    logger.info("\nGenerated files:")
+    logger.info("  Figures:")
+    logger.info("    - alignment_distribution.png")
+    logger.info("    - category_heatmap.png")
+    logger.info("    - concern_breakdown.png")
+    logger.info("    - radar_charts.png")
+    logger.info("  Analysis:")
+    logger.info("    - statistics_report.md")
 
 
 if __name__ == "__main__":
