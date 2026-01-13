@@ -205,3 +205,6 @@ The critical finding is that baseline metrics completely miss attack-specific vu
 **Baseline Evaluation:**
 - Shevlane et al. (2023). "Model Evaluation for Extreme Risks." [Paper](../../papers/2023_shevlane_model-evaluation-for-extreme-risks.pdf)
 - Anthropic (2022). "Constitutional AI: Harmlessness from AI Feedback." [Paper](../../papers/2022_anthropic_constitutional-ai-harmlessness-from-ai-feedback.pdf)
+
+**Prior Experiments:**
+- Experiment 01: Capability Probing (79.69% baseline refusal, 2.81% full compliance)
