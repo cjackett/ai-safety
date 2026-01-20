@@ -1,6 +1,21 @@
 # Development/testing configuration - minimal restrictions
-name: "permissive_mode"
-description: "Development configuration for testing"
+
+# Experiment metadata
+experiment:
+  name: "guardrail_testing"
+  version: "1.0"
+  mode: "permissive"
+  description: "Development configuration for testing"
+
+# Paths configuration
+paths:
+  prompts: "prompts/"
+  results: "results/"
+  config: "config/"
+  raw: "results/raw/"
+  analysis: "results/analysis/"
+  figures: "results/figures/"
+  logs: "results/logs/"
 
 input_guardrails:
   jailbreak_detector:
@@ -42,8 +57,12 @@ access_control:
   key_expiry_days: 365  # Long expiry for development/testing
 
 logging:
-  audit_log_path: "results/audit.jsonl"
-  security_events_path: "results/security_events.jsonl"
+  level: "INFO"  # INFO for permissive mode
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  console: true
+  file: true
+  audit_log_path: "results/raw/audit.jsonl"
+  security_events_path: "results/raw/security_events.jsonl"
 
 model:
   default_model: "mistral:7b"

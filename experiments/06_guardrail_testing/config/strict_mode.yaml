@@ -1,6 +1,21 @@
 # Maximum security configuration - high false positives acceptable
-name: "strict_mode"
-description: "High-security configuration for sensitive deployments"
+
+# Experiment metadata
+experiment:
+  name: "guardrail_testing"
+  version: "1.0"
+  mode: "strict"
+  description: "High-security configuration for sensitive deployments"
+
+# Paths configuration
+paths:
+  prompts: "prompts/"
+  results: "results/"
+  config: "config/"
+  raw: "results/raw/"
+  analysis: "results/analysis/"
+  figures: "results/figures/"
+  logs: "results/logs/"
 
 input_guardrails:
   jailbreak_detector:
@@ -72,8 +87,12 @@ access_control:
   key_expiry_days: 30  # Short expiry for high-security deployments
 
 logging:
-  audit_log_path: "results/audit.jsonl"
-  security_events_path: "results/security_events.jsonl"
+  level: "DEBUG"  # DEBUG for strict mode to capture all details
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  console: true
+  file: true
+  audit_log_path: "results/raw/audit.jsonl"
+  security_events_path: "results/raw/security_events.jsonl"
 
 model:
   default_model: "mistral:7b"
