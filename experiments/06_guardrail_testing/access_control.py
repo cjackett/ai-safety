@@ -6,18 +6,24 @@ Leverages DevSecOps best practices for secure key storage and access control.
 """
 
 import hashlib
+import json
+import logging
 import secrets
 import time
-import json
-from typing import Dict, Optional, Tuple
-from dataclasses import dataclass, asdict
-from datetime import datetime, timedelta
 from collections import defaultdict, deque
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Any
+
+logger = logging.getLogger(__name__)
+KEY_PREFIX_LENGTH = 10
 
 
 @dataclass
 class UserInfo:
     """User information associated with API key."""
+
     user_id: str
     tier: str  # "free", "research", "enterprise"
     created_at: str
@@ -27,6 +33,7 @@ class UserInfo:
 @dataclass
 class AuthResult:
     """Result of authorization check."""
+
     allowed: bool
     user_tier: str
     quota_remaining: int
@@ -36,8 +43,9 @@ class AuthResult:
 class APIKeyManager:
     """Secure API key management with hashing."""
 
-    def __init__(self):
-        self.keys: Dict[str, UserInfo] = {}  # key_hash -> UserInfo
+    def __init__(self) -> None:
+        """Initialize API key store."""
+        self.keys: dict[str, UserInfo] = {}  # key_hash -> UserInfo
 
     def generate_key(self, user_id: str, tier: str, expiry_days: int = 90) -> str:
         """
@@ -53,19 +61,19 @@ class APIKeyManager:
         # Store hashed version only
         key_hash = self._hash_key(key)
 
-        now = datetime.now()
+        now = datetime.now(tz=UTC)
         expires = now + timedelta(days=expiry_days)
 
         self.keys[key_hash] = UserInfo(
             user_id=user_id,
             tier=tier,
             created_at=now.isoformat(),
-            expires_at=expires.isoformat()
+            expires_at=expires.isoformat(),
         )
 
         return key  # Show once, never again
 
-    def validate_key(self, api_key: str) -> Optional[UserInfo]:
+    def validate_key(self, api_key: str) -> UserInfo | None:
         """
         Validate API key and return user info.
 
@@ -80,7 +88,7 @@ class APIKeyManager:
 
         # Check expiry
         expires_at = datetime.fromisoformat(user_info.expires_at)
-        if datetime.now() > expires_at:
+        if datetime.now(tz=UTC) > expires_at:
             return None
 
         return user_info
@@ -105,18 +113,19 @@ class RateLimiter:
     Implements sliding window rate limiting for requests per minute/hour/day.
     """
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict[str, Any]) -> None:
+        """Initialize rate limits for each tier."""
         self.config = config
         # Track requests: user_tier -> window -> deque of timestamps
-        self.requests: Dict[str, Dict[str, deque]] = defaultdict(
+        self.requests: dict[str, dict[str, deque[float]]] = defaultdict(
             lambda: {
                 "minute": deque(),
                 "hour": deque(),
-                "day": deque()
-            }
+                "day": deque(),
+            },
         )
 
-    def check_rate_limit(self, user_tier: str) -> Tuple[bool, str, int]:
+    def check_rate_limit(self, user_tier: str) -> tuple[bool, str, int]:
         """
         Check if request is within rate limits.
 
@@ -133,7 +142,7 @@ class RateLimiter:
         for window, limit_key in [
             ("minute", "requests_per_minute"),
             ("hour", "requests_per_hour"),
-            ("day", "requests_per_day")
+            ("day", "requests_per_day"),
         ]:
             window_seconds = {"minute": 60, "hour": 3600, "day": 86400}[window]
             limit = tier_limits[limit_key]
@@ -149,11 +158,11 @@ class RateLimiter:
                 return False, f"Rate limit exceeded: {limit} {window}", quota_remaining
 
         # Calculate quota remaining (most restrictive window)
-        min_quota = float('inf')
+        min_quota = float("inf")
         for window, limit_key in [
             ("minute", "requests_per_minute"),
             ("hour", "requests_per_hour"),
-            ("day", "requests_per_day")
+            ("day", "requests_per_day"),
         ]:
             limit = tier_limits[limit_key]
             used = len(self.requests[user_tier][window])
@@ -162,7 +171,7 @@ class RateLimiter:
 
         return True, "", int(min_quota)
 
-    def record_request(self, user_tier: str):
+    def record_request(self, user_tier: str) -> None:
         """Record a request timestamp."""
         now = time.time()
         for window in ["minute", "hour", "day"]:
@@ -172,9 +181,8 @@ class RateLimiter:
 class AuditLogger:
     """Security event and audit logging."""
 
-    def __init__(self, config: Dict):
-        from pathlib import Path
-
+    def __init__(self, config: dict[str, Any]) -> None:
+        """Initialize audit log destinations."""
         self.config = config
         self.audit_log_path = config.get("audit_log_path", "results/audit.jsonl")
         self.security_log_path = config.get("security_events_path", "results/security_events.jsonl")
@@ -183,80 +191,102 @@ class AuditLogger:
         Path(self.audit_log_path).parent.mkdir(parents=True, exist_ok=True)
         Path(self.security_log_path).parent.mkdir(parents=True, exist_ok=True)
 
-    def log_event(self, event_type: str, data: Dict):
+    def log_event(self, event_type: str, data: dict[str, Any]) -> None:
         """Log event to audit log."""
         event = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(tz=UTC).isoformat(),
             "event_type": event_type,
-            **data
+            **data,
         }
 
         # Append to audit log
         try:
-            with open(self.audit_log_path, "a") as f:
+            with Path(self.audit_log_path).open("a", encoding="utf-8") as f:
                 f.write(json.dumps(event) + "\n")
-        except Exception as e:
-            print(f"Failed to write audit log: {e}")
+        except OSError:
+            logger.exception("Failed to write audit log")
 
-    def log_security_event(self, event_type: str, data: Dict):
+    def log_security_event(self, event_type: str, data: dict[str, Any]) -> None:
         """Log security event to security log."""
         event = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(tz=UTC).isoformat(),
             "event_type": event_type,
-            **data
+            **data,
         }
 
         try:
-            with open(self.security_log_path, "a") as f:
+            with Path(self.security_log_path).open("a", encoding="utf-8") as f:
                 f.write(json.dumps(event) + "\n")
-        except Exception as e:
-            print(f"Failed to write security log: {e}")
+        except OSError:
+            logger.exception("Failed to write security log")
 
-    def log_successful_request(self, request_id: str, user_tier: str,
-                               prompt_length: int, response_length: int,
-                               latency: float):
+    def log_successful_request(
+        self,
+        request_id: str,
+        user_tier: str,
+        prompt_length: int,
+        response_length: int,
+        latency: float,
+    ) -> None:
         """Log successful request."""
-        self.log_event("successful_request", {
-            "request_id": request_id,
-            "user_tier": user_tier,
-            "prompt_length": prompt_length,
-            "response_length": response_length,
-            "latency_ms": latency * 1000
-        })
+        self.log_event(
+            "successful_request",
+            {
+                "request_id": request_id,
+                "user_tier": user_tier,
+                "prompt_length": prompt_length,
+                "response_length": response_length,
+                "latency_ms": latency * 1000,
+            },
+        )
 
-    def log_blocked_request(self, request_id: str, user_tier: str,
-                           prompt_hash: str, blocked_by: str,
-                           confidence: float):
+    def log_blocked_request(
+        self,
+        request_id: str,
+        user_tier: str,
+        prompt_hash: str,
+        blocked_by: str,
+        confidence: float,
+    ) -> None:
         """Log blocked request."""
-        self.log_security_event("blocked_request", {
-            "request_id": request_id,
-            "user_tier": user_tier,
-            "prompt_hash": prompt_hash,
-            "blocked_by": blocked_by,
-            "confidence": confidence
-        })
+        self.log_security_event(
+            "blocked_request",
+            {
+                "request_id": request_id,
+                "user_tier": user_tier,
+                "prompt_hash": prompt_hash,
+                "blocked_by": blocked_by,
+                "confidence": confidence,
+            },
+        )
 
-    def log_harmful_output(self, request_id: str, user_tier: str,
-                          violations: list):
+    def log_harmful_output(self, request_id: str, user_tier: str, violations: list[dict[str, Any]]) -> None:
         """Log harmful output detection."""
-        self.log_security_event("harmful_output_blocked", {
-            "request_id": request_id,
-            "user_tier": user_tier,
-            "violations": violations
-        })
+        self.log_security_event(
+            "harmful_output_blocked",
+            {
+                "request_id": request_id,
+                "user_tier": user_tier,
+                "violations": violations,
+            },
+        )
 
-    def log_error(self, request_id: str, error: str):
+    def log_error(self, request_id: str, error: str) -> None:
         """Log error."""
-        self.log_event("error", {
-            "request_id": request_id,
-            "error": error
-        })
+        self.log_event(
+            "error",
+            {
+                "request_id": request_id,
+                "error": error,
+            },
+        )
 
 
 class AccessControl:
     """Main access control orchestration."""
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict[str, Any]) -> None:
+        """Initialize access control services."""
         self.config = config
         self.key_manager = APIKeyManager()
         self.rate_limiter = RateLimiter(config.get("rate_limits", {}))
@@ -272,30 +302,36 @@ class AccessControl:
         # Validate API key
         user_info = self.key_manager.validate_key(api_key)
         if not user_info:
-            self.audit_logger.log_security_event("invalid_api_key", {
-                "key_prefix": api_key[:10] if len(api_key) >= 10 else "***"
-            })
+            self.audit_logger.log_security_event(
+                "invalid_api_key",
+                {
+                    "key_prefix": api_key[:KEY_PREFIX_LENGTH] if len(api_key) >= KEY_PREFIX_LENGTH else "***",
+                },
+            )
             return AuthResult(
                 allowed=False,
                 user_tier="",
                 quota_remaining=0,
-                reason="Invalid or expired API key"
+                reason="Invalid or expired API key",
             )
 
         # Check rate limits
         allowed, reason, quota = self.rate_limiter.check_rate_limit(user_info.tier)
 
         if not allowed:
-            self.audit_logger.log_security_event("rate_limit_exceeded", {
-                "user_id": user_info.user_id,
-                "tier": user_info.tier,
-                "reason": reason
-            })
+            self.audit_logger.log_security_event(
+                "rate_limit_exceeded",
+                {
+                    "user_id": user_info.user_id,
+                    "tier": user_info.tier,
+                    "reason": reason,
+                },
+            )
             return AuthResult(
                 allowed=False,
                 user_tier=user_info.tier,
                 quota_remaining=0,
-                reason=reason
+                reason=reason,
             )
 
         # Record request
@@ -304,5 +340,5 @@ class AccessControl:
         return AuthResult(
             allowed=True,
             user_tier=user_info.tier,
-            quota_remaining=quota
+            quota_remaining=quota,
         )

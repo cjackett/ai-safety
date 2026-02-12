@@ -1,46 +1,75 @@
-"""
-Analyse and visualise jailbreak testing results.
+"""Experiment 02: Jailbreak Testing - Results Analysis and Visualization.
 
-Generates visualisations comparing baseline vs jailbreak success rates,
-attack type effectiveness, and model vulnerability patterns.
-"""
+Analyzes and visualizes jailbreak testing results, comparing baseline vs jailbreak
+success rates, attack type effectiveness, and model vulnerability patterns.
+"""  # noqa: INP001
 
 import argparse
 import json
+import logging
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import yaml
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
 # Script directory
-SCRIPT_DIR = Path(__file__).parent
+SCRIPT_DIR = Path(__file__).parent.resolve()
+
+
+def load_config() -> dict[str, Any]:
+    """Load configuration from YAML file."""
+    config_path = SCRIPT_DIR / "config" / "config.yaml"
+
+    if not config_path.exists():
+        logger.warning(f"Configuration file not found: {config_path}, using defaults")
+        return {}
+
+    with config_path.open() as f:
+        config: dict[str, Any] = yaml.safe_load(f)
+
+    logger.info(f"Loaded configuration from: {config_path}")
+    return config
 
 
 def load_results(result_file: Path) -> list[dict[str, Any]]:
     """Load results from JSON file."""
-    with open(result_file, "r") as f:
-        return json.load(f)
+    with result_file.open() as f:
+        results: list[dict[str, Any]] = json.load(f)
+    return results
 
 
 def find_latest_results() -> Path:
     """Find the most recent results JSON file."""
-    results_dir = SCRIPT_DIR / "results"
+    results_dir = SCRIPT_DIR / "results" / "raw"
 
     if not results_dir.exists():
-        raise FileNotFoundError("No results directory found")
+        # Fallback to old structure
+        results_dir = SCRIPT_DIR / "results"
+
+    if not results_dir.exists():
+        msg = "No results directory found"
+        raise FileNotFoundError(msg)
 
     # Find all JSON files matching jailbreak pattern
     json_files = list(results_dir.glob("jailbreak_tests*.json"))
 
     if not json_files:
-        raise FileNotFoundError("No results files found in results/")
+        msg = "No results files found in results/"
+        raise FileNotFoundError(msg)
 
     # Return the most recently modified file
-    latest = max(json_files, key=lambda p: p.stat().st_mtime)
-    return latest
+    return max(json_files, key=lambda p: p.stat().st_mtime)
 
 
 def create_jailbreak_summary(results: list[dict[str, Any]]) -> pd.DataFrame:
@@ -53,14 +82,16 @@ def create_jailbreak_summary(results: list[dict[str, Any]]) -> pd.DataFrame:
         # Clean up model names (remove "ollama/" prefix)
         model_name = result["model"].replace("ollama/", "")
 
-        data.append({
-            "model": model_name,
-            "category": result["category"],
-            "attack_type": result["attack_type"],
-            "technique": result["technique"],
-            "compliance_type": result.get("compliance_type"),
-            "severity": result.get("severity", "unknown"),
-        })
+        data.append(
+            {
+                "model": model_name,
+                "category": result["category"],
+                "attack_type": result["attack_type"],
+                "technique": result["technique"],
+                "compliance_type": result.get("compliance_type"),
+                "severity": result.get("severity", "unknown"),
+            },
+        )
 
     return pd.DataFrame(data)
 
@@ -69,14 +100,19 @@ def load_baseline_results() -> pd.DataFrame:
     """Load baseline results from 01_capability_probing for comparison."""
     baseline_dir = SCRIPT_DIR.parent / "01_capability_probing" / "results"
 
-    # Find latest baseline results
-    baseline_files = list(baseline_dir.glob("probe_models*.json"))
+    # Try new structure first
+    baseline_raw_dir = baseline_dir / "raw"
+    if baseline_raw_dir.exists():
+        baseline_files = list(baseline_raw_dir.glob("probe_models*.json"))
+    else:
+        baseline_files = list(baseline_dir.glob("probe_models*.json"))
+
     if not baseline_files:
         return None
 
     latest_baseline = max(baseline_files, key=lambda p: p.stat().st_mtime)
 
-    with open(latest_baseline, "r") as f:
+    with latest_baseline.open() as f:
         baseline_results = json.load(f)
 
     # Create summary
@@ -86,19 +122,25 @@ def load_baseline_results() -> pd.DataFrame:
             continue
 
         model_name = result["model"].replace("ollama/", "")
-        data.append({
-            "model": model_name,
-            "category": result["category"],
-            "compliance_type": result.get("compliance_type"),
-        })
+        data.append(
+            {
+                "model": model_name,
+                "category": result["category"],
+                "compliance_type": result.get("compliance_type"),
+            },
+        )
 
     return pd.DataFrame(data)
 
 
-def plot_baseline_vs_jailbreak_comparison(jailbreak_df: pd.DataFrame, baseline_df: pd.DataFrame, output_dir: Path) -> None:
+def plot_baseline_vs_jailbreak_comparison(
+    jailbreak_df: pd.DataFrame,
+    baseline_df: pd.DataFrame,
+    output_dir: Path,
+) -> None:
     """Plot comparison of baseline vs jailbreak success rates."""
     if baseline_df is None:
-        print("  ⚠ No baseline results found, skipping comparison plot")
+        logger.warning("No baseline results found, skipping comparison plot")
         return
 
     models = sorted(jailbreak_df["model"].unique())
@@ -128,33 +170,39 @@ def plot_baseline_vs_jailbreak_comparison(jailbreak_df: pd.DataFrame, baseline_d
     x = np.arange(len(models))
     width = 0.35
 
-    fig, ax = plt.subplots(figsize=(10, 6))
+    _fig, ax = plt.subplots(figsize=(10, 6))
 
-    bars1 = ax.bar(x - width/2, baseline_rates, width, label='Baseline (Direct Prompts)', color='#2ecc71', alpha=0.8)
-    bars2 = ax.bar(x + width/2, jailbreak_rates, width, label='Jailbreak Attacks', color='#e74c3c', alpha=0.8)
+    bars1 = ax.bar(x - width / 2, baseline_rates, width, label="Baseline (Direct Prompts)", color="#2ecc71", alpha=0.8)
+    bars2 = ax.bar(x + width / 2, jailbreak_rates, width, label="Jailbreak Attacks", color="#e74c3c", alpha=0.8)
 
-    ax.set_xlabel('Model', fontsize=12)
-    ax.set_ylabel('Full Compliance Rate (%)', fontsize=12)
-    ax.set_title('Baseline vs Jailbreak Success Rates', fontsize=14)
+    ax.set_xlabel("Model", fontsize=12)
+    ax.set_ylabel("Full Compliance Rate (%)", fontsize=12)
+    ax.set_title("Baseline vs Jailbreak Success Rates", fontsize=14)
     ax.set_xticks(x)
     ax.set_xticklabels(models, rotation=0)
     ax.legend()
-    ax.set_ylim(0, max(max(baseline_rates), max(jailbreak_rates)) + 10)
+    ax.set_ylim(0, max(baseline_rates + jailbreak_rates) + 10)
 
     # Add percentage labels on bars
+    min_label_height = 0.5
     for bars in [bars1, bars2]:
         for bar in bars:
             height = bar.get_height()
-            if height > 0.5:
-                ax.text(bar.get_x() + bar.get_width()/2., height,
-                       f'{height:.1f}%',
-                       ha='center', va='bottom', fontsize=9)
+            if height > min_label_height:
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2.0,
+                    height,
+                    f"{height:.1f}%",
+                    ha="center",
+                    va="bottom",
+                    fontsize=9,
+                )
 
     plt.tight_layout()
     plt.savefig(output_dir / "baseline_vs_jailbreak.png", dpi=300, bbox_inches="tight")
     plt.close()
 
-    print(f"  ✓ Saved: baseline_vs_jailbreak.png")
+    logger.info("✓ Saved: baseline_vs_jailbreak.png")
 
 
 def plot_attack_type_effectiveness(df: pd.DataFrame, output_dir: Path) -> None:
@@ -169,27 +217,25 @@ def plot_attack_type_effectiveness(df: pd.DataFrame, output_dir: Path) -> None:
         success_rates.append(success_rate)
 
     # Create bar chart
-    fig, ax = plt.subplots(figsize=(10, 6))
+    _fig, ax = plt.subplots(figsize=(10, 6))
 
-    bars = ax.bar(attack_types, success_rates, color=['#e74c3c', '#f39c12', '#9b59b6', '#3498db'])
+    bars = ax.bar(attack_types, success_rates, color=["#e74c3c", "#f39c12", "#9b59b6", "#3498db"])
 
-    ax.set_xlabel('Attack Type', fontsize=12)
-    ax.set_ylabel('Jailbreak Success Rate (%)', fontsize=12)
-    ax.set_title('Jailbreak Success Rate by Attack Type', fontsize=14)
+    ax.set_xlabel("Attack Type", fontsize=12)
+    ax.set_ylabel("Jailbreak Success Rate (%)", fontsize=12)
+    ax.set_title("Jailbreak Success Rate by Attack Type", fontsize=14)
     ax.set_ylim(0, max(success_rates) + 10)
 
     # Add percentage labels
     for bar in bars:
         height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height,
-               f'{height:.1f}%',
-               ha='center', va='bottom', fontsize=10)
+        ax.text(bar.get_x() + bar.get_width() / 2.0, height, f"{height:.1f}%", ha="center", va="bottom", fontsize=10)
 
     plt.tight_layout()
     plt.savefig(output_dir / "attack_type_effectiveness.png", dpi=300, bbox_inches="tight")
     plt.close()
 
-    print(f"  ✓ Saved: attack_type_effectiveness.png")
+    logger.info("✓ Saved: attack_type_effectiveness.png")
 
 
 def plot_model_vulnerability_heatmap(df: pd.DataFrame, output_dir: Path) -> None:
@@ -212,13 +258,9 @@ def plot_model_vulnerability_heatmap(df: pd.DataFrame, output_dir: Path) -> None
         success_rates.append(row)
 
     # Create heatmap
-    fig, ax = plt.subplots(figsize=(10, 6))
+    _fig, ax = plt.subplots(figsize=(10, 6))
 
-    heatmap_df = pd.DataFrame(
-        success_rates,
-        index=models,
-        columns=attack_types
-    )
+    heatmap_df = pd.DataFrame(success_rates, index=models, columns=attack_types)
 
     sns.heatmap(
         heatmap_df,
@@ -228,7 +270,7 @@ def plot_model_vulnerability_heatmap(df: pd.DataFrame, output_dir: Path) -> None
         vmin=0,
         vmax=100,
         cbar_kws={"label": "Jailbreak Success Rate (%)"},
-        ax=ax
+        ax=ax,
     )
 
     ax.set_title("Model Vulnerability by Attack Type", fontsize=14)
@@ -239,7 +281,7 @@ def plot_model_vulnerability_heatmap(df: pd.DataFrame, output_dir: Path) -> None
     plt.savefig(output_dir / "vulnerability_heatmap.png", dpi=300, bbox_inches="tight")
     plt.close()
 
-    print(f"  ✓ Saved: vulnerability_heatmap.png")
+    logger.info("✓ Saved: vulnerability_heatmap.png")
 
 
 def plot_category_jailbreak_rates(df: pd.DataFrame, output_dir: Path) -> None:
@@ -254,28 +296,120 @@ def plot_category_jailbreak_rates(df: pd.DataFrame, output_dir: Path) -> None:
         success_rates.append(success_rate)
 
     # Create horizontal bar chart
-    fig, ax = plt.subplots(figsize=(10, 6))
+    _fig, ax = plt.subplots(figsize=(10, 6))
 
-    bars = ax.barh(categories, success_rates, color='#e74c3c', alpha=0.8)
+    bars = ax.barh(categories, success_rates, color="#e74c3c", alpha=0.8)
 
-    ax.set_xlabel('Jailbreak Success Rate (%)', fontsize=12)
-    ax.set_ylabel('Harm Category', fontsize=12)
-    ax.set_title('Jailbreak Success Rate by Harm Category', fontsize=14)
+    ax.set_xlabel("Jailbreak Success Rate (%)", fontsize=12)
+    ax.set_ylabel("Harm Category", fontsize=12)
+    ax.set_title("Jailbreak Success Rate by Harm Category", fontsize=14)
     ax.set_xlim(0, max(success_rates) + 10)
 
     # Add percentage labels
+    min_label_width = 0.5
     for bar in bars:
         width = bar.get_width()
-        if width > 0.5:
-            ax.text(width + 1, bar.get_y() + bar.get_height()/2.,
-                   f'{width:.1f}%',
-                   ha='left', va='center', fontsize=9)
+        if width > min_label_width:
+            ax.text(
+                width + 1,
+                bar.get_y() + bar.get_height() / 2.0,
+                f"{width:.1f}%",
+                ha="left",
+                va="center",
+                fontsize=9,
+            )
 
     plt.tight_layout()
     plt.savefig(output_dir / "category_jailbreak_rates.png", dpi=300, bbox_inches="tight")
     plt.close()
 
-    print(f"  ✓ Saved: category_jailbreak_rates.png")
+    logger.info("✓ Saved: category_jailbreak_rates.png")
+
+
+def _plot_single_model_radar(
+    ax: "Axes",
+    df: pd.DataFrame,
+    model: str,
+    categories: list[str],
+    angles: list[float],
+    colors: dict[str, str],
+) -> None:
+    """
+    Plot radar chart for a single model.
+
+    Args:
+        ax: Matplotlib polar axes to plot on
+        df: Full dataframe with all results
+        model: Model name to plot
+        categories: List of harm categories
+        angles: List of angles for radar chart
+        colors: Dictionary mapping compliance types to colors
+    """
+    # Calculate compliance rates for each category
+    refused_rates = []
+    hedged_rates = []
+    full_rates = []
+
+    for category in categories:
+        subset = df[(df["model"] == model) & (df["category"] == category)]
+        total = len(subset)
+
+        if total > 0:
+            refused = len(subset[subset["compliance_type"] == "refused"])
+            hedged = len(subset[subset["compliance_type"] == "hedged"])
+            full = len(subset[subset["compliance_type"] == "full"])
+
+            # Calculate percentages
+            refused_rates.append((refused / total) * 100)
+            hedged_rates.append((hedged / total) * 100)
+            full_rates.append((full / total) * 100)
+        else:
+            refused_rates.append(0)
+            hedged_rates.append(0)
+            full_rates.append(0)
+
+    # Close the polygons
+    refused_rates += refused_rates[:1]
+    hedged_rates += hedged_rates[:1]
+    full_rates += full_rates[:1]
+
+    # Create stacked rings from center outward
+    center = [0] * len(angles)
+    refused_outer = refused_rates[:]
+    hedged_outer = [(r + h) for r, h in zip(refused_rates, hedged_rates, strict=False)]
+    full_outer = [100] * len(angles)
+
+    # Plot stacked areas from inside to outside
+    ax.fill_between(angles, center, refused_outer, alpha=0.7, color=colors["refused"], label="Refused")
+    ax.fill_between(angles, refused_outer, hedged_outer, alpha=0.7, color=colors["hedged"], label="Hedged")
+    ax.fill_between(angles, hedged_outer, full_outer, alpha=0.7, color=colors["full"], label="Full")
+
+    # Add edge lines for clarity
+    ax.plot(angles, refused_outer, "o-", linewidth=1.5, color="#27ae60", alpha=0.8, markersize=4)
+    ax.plot(angles, hedged_outer, "o-", linewidth=1.5, color="#e67e22", alpha=0.8, markersize=4)
+
+    # Customize
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(categories, size=10)
+    ax.set_ylim(0, 100)
+    ax.set_yticks([20, 40, 60, 80, 100])
+    ax.set_yticklabels(["20%", "40%", "60%", "80%", "100%"], size=9.5)
+    ax.grid(True, linestyle="-", alpha=0.5, linewidth=0.7, color="gray")
+
+    # Title with compliance summary
+    total_tests = len(df[df["model"] == model])
+    refused_count = len(df[(df["model"] == model) & (df["compliance_type"] == "refused")])
+    hedged_count = len(df[(df["model"] == model) & (df["compliance_type"] == "hedged")])
+    full_count = len(df[(df["model"] == model) & (df["compliance_type"] == "full")])
+
+    # Set model name as bold text at top
+    ax.text(0.5, 1.17, model, transform=ax.transAxes, ha="center", va="top", fontsize=12, fontweight="bold")
+
+    # Add stats below the model name
+    stats_text = f"R:{refused_count}/{total_tests} ({refused_count/total_tests*100:.1f}%) "
+    stats_text += f"H:{hedged_count} ({hedged_count/total_tests*100:.1f}%) "
+    stats_text += f"F:{full_count} ({full_count/total_tests*100:.1f}%)"
+    ax.text(0.5, 1.12, stats_text, transform=ax.transAxes, ha="center", va="top", fontsize=9)
 
 
 def plot_radar_charts(df: pd.DataFrame, output_dir: Path) -> None:
@@ -290,183 +424,45 @@ def plot_radar_charts(df: pd.DataFrame, output_dir: Path) -> None:
     angles += angles[:1]  # Complete the circle
 
     # Create 2x2 polar subplots
-    fig, axes = plt.subplots(2, 2, figsize=(14, 14),
-                             subplot_kw=dict(projection='polar'))
+    fig, axes = plt.subplots(2, 2, figsize=(14, 14), subplot_kw={"projection": "polar"})
 
     # Flatten axes for easy iteration
     axes = axes.flatten()
 
     # Colors for each compliance type
-    colors = {
-        "refused": "#2ecc71",   # Green
-        "hedged": "#f39c12",    # Orange
-        "full": "#e74c3c"       # Red
-    }
+    colors = {"refused": "#2ecc71", "hedged": "#f39c12", "full": "#e74c3c"}
 
+    # Plot each model
     for idx, model in enumerate(models):
-        ax = axes[idx]
-
-        # Calculate compliance rates for each category
-        refused_rates = []
-        hedged_rates = []
-        full_rates = []
-
-        for category in categories:
-            subset = df[(df["model"] == model) & (df["category"] == category)]
-            total = len(subset)
-
-            if total > 0:
-                refused = len(subset[subset["compliance_type"] == "refused"])
-                hedged = len(subset[subset["compliance_type"] == "hedged"])
-                full = len(subset[subset["compliance_type"] == "full"])
-
-                # Calculate percentages
-                refused_rates.append((refused / total) * 100)
-                hedged_rates.append((hedged / total) * 100)
-                full_rates.append((full / total) * 100)
-            else:
-                refused_rates.append(0)
-                hedged_rates.append(0)
-                full_rates.append(0)
-
-        # Close the polygons
-        refused_rates += refused_rates[:1]
-        hedged_rates += hedged_rates[:1]
-        full_rates += full_rates[:1]
-
-        # Create stacked rings from center outward:
-        # 1. Inner ring (0% to refused%): refused area (green) - safe at center
-        # 2. Middle ring (refused% to refused%+hedged%): hedged area (orange)
-        # 3. Outer ring (refused%+hedged% to 100%): full compliance (red) - dangerous at edge
-
-        # Calculate cumulative percentages for stacking
-        center = [0] * len(angles)
-        refused_outer = refused_rates[:]
-        hedged_outer = [(r + h) for r, h in zip(refused_rates, hedged_rates)]
-        full_outer = [100] * len(angles)
-
-        # Plot stacked areas from inside to outside
-        ax.fill_between(angles, center, refused_outer,
-                        alpha=0.7, color=colors["refused"], label='Refused')
-        ax.fill_between(angles, refused_outer, hedged_outer,
-                        alpha=0.7, color=colors["hedged"], label='Hedged')
-        ax.fill_between(angles, hedged_outer, full_outer,
-                        alpha=0.7, color=colors["full"], label='Full')
-
-        # Add edge lines for clarity
-        ax.plot(angles, refused_outer, 'o-', linewidth=1.5, color='#27ae60', alpha=0.8, markersize=4)
-        ax.plot(angles, hedged_outer, 'o-', linewidth=1.5, color='#e67e22', alpha=0.8, markersize=4)
-
-        # Customize
-        ax.set_xticks(angles[:-1])
-        ax.set_xticklabels(categories, size=10)
-        ax.set_ylim(0, 100)
-        ax.set_yticks([20, 40, 60, 80, 100])
-        ax.set_yticklabels(['20%', '40%', '60%', '80%', '100%'], size=9.5)
-        ax.grid(True, linestyle='-', alpha=0.5, linewidth=0.7, color='gray')
-
-        # Title with compliance summary
-        total_tests = len(df[df["model"] == model])
-        refused_count = len(df[(df["model"] == model) & (df["compliance_type"] == "refused")])
-        hedged_count = len(df[(df["model"] == model) & (df["compliance_type"] == "hedged")])
-        full_count = len(df[(df["model"] == model) & (df["compliance_type"] == "full")])
-
-        # Set model name as bold text at top
-        ax.text(0.5, 1.17, model, transform=ax.transAxes,
-                ha='center', va='top', fontsize=12, fontweight='bold')
-
-        # Add stats below the model name
-        stats_text = f"R:{refused_count}/{total_tests} ({refused_count/total_tests*100:.1f}%) "
-        stats_text += f"H:{hedged_count} ({hedged_count/total_tests*100:.1f}%) "
-        stats_text += f"F:{full_count} ({full_count/total_tests*100:.1f}%)"
-        ax.text(0.5, 1.12, stats_text, transform=ax.transAxes,
-                ha='center', va='top', fontsize=9)
+        _plot_single_model_radar(axes[idx], df, model, categories, angles, colors)
 
     # Hide unused subplots if fewer than 4 models
     for idx in range(num_models, 4):
         axes[idx].set_visible(False)
 
-    # Add legend to the figure (top right, outside all plots)
+    # Add legend to the figure
     handles, labels = axes[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(0.98, 0.98),
-              fontsize=11, frameon=True, title='Compliance Type')
+    fig.legend(
+        handles,
+        labels,
+        loc="upper right",
+        bbox_to_anchor=(0.98, 0.98),
+        fontsize=11,
+        frameon=True,
+        title="Compliance Type",
+    )
 
-    plt.suptitle("Jailbreak Attack Performance: Category-Specific Compliance Distribution",
-                 fontsize=14, y=0.99, fontweight='bold')
-    plt.tight_layout(rect=[0, 0, 0.88, 0.97])
+    plt.suptitle(
+        "Jailbreak Attack Performance: Category-Specific Compliance Distribution",
+        fontsize=14,
+        y=0.99,
+        fontweight="bold",
+    )
+    plt.tight_layout(rect=(0, 0, 0.88, 0.97))
     plt.savefig(output_dir / "radar_charts.png", dpi=300, bbox_inches="tight")
     plt.close()
 
-    print(f"  ✓ Saved: radar_charts.png")
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Analyse and visualise jailbreak testing results"
-    )
-    parser.add_argument(
-        "result_file",
-        type=str,
-        nargs="?",
-        default=None,
-        help="Path to results JSON file (default: auto-detect latest)"
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=str,
-        default=None,
-        help="Directory to save plots (default: same as result file)"
-    )
-
-    args = parser.parse_args()
-
-    # Auto-detect latest results file if not specified
-    if args.result_file is None:
-        try:
-            result_file = find_latest_results()
-            print(f"Auto-detected latest results file: {result_file.name}\n")
-        except FileNotFoundError as e:
-            print(f"Error: {e}")
-            print("Please specify a results file explicitly.")
-            return
-    else:
-        result_file = Path(args.result_file)
-        if not result_file.exists():
-            print(f"Error: Result file not found: {result_file}")
-            return
-
-    # Set output directory
-    if args.output_dir:
-        output_dir = Path(args.output_dir)
-    else:
-        output_dir = result_file.parent
-
-    output_dir.mkdir(exist_ok=True)
-
-    print(f"\nAnalysing results from: {result_file}")
-    print(f"Output directory: {output_dir}\n")
-
-    # Load and process results
-    results = load_results(result_file)
-    df = create_jailbreak_summary(results)
-
-    # Load baseline results for comparison
-    baseline_df = load_baseline_results()
-
-    print(f"Loaded {len(df)} valid results\n")
-
-    # Generate visualisations
-    print("Generating visualisations:")
-    plot_baseline_vs_jailbreak_comparison(df, baseline_df, output_dir)
-    plot_attack_type_effectiveness(df, output_dir)
-    plot_model_vulnerability_heatmap(df, output_dir)
-    plot_category_jailbreak_rates(df, output_dir)
-    plot_radar_charts(df, output_dir)
-    generate_statistics_report(df, output_dir)
-
-    print(f"\n{'='*60}")
-    print(f"Analysis complete! Plots saved to: {output_dir}")
-    print(f"{'='*60}\n")
+    logger.info("✓ Saved: radar_charts.png")
 
 
 def generate_statistics_report(df: pd.DataFrame, output_dir: Path) -> None:
@@ -485,9 +481,11 @@ def generate_statistics_report(df: pd.DataFrame, output_dir: Path) -> None:
         report.append(f"- {comp_type}: {count} ({compliance_pct.get(comp_type, 0)}%)")
 
     report.append("\n## Attack Type Effectiveness (Full Compliance Rate)\n")
-    attack_stats = df.groupby("attack_type")["compliance_type"].apply(
-        lambda x: (x == "full").sum() / len(x) * 100
-    ).sort_values(ascending=False)
+    attack_stats = (
+        df.groupby("attack_type")["compliance_type"]
+        .apply(lambda x: (x == "full").sum() / len(x) * 100)
+        .sort_values(ascending=False)
+    )
     for attack, rate in attack_stats.items():
         report.append(f"- {attack}: {rate:.1f}% success rate")
 
@@ -500,13 +498,86 @@ def generate_statistics_report(df: pd.DataFrame, output_dir: Path) -> None:
         report.append(f"\n### {model}")
         report.append(f"- Jailbreak Success (Full): {full_count} ({full_count/total*100:.1f}%)")
         report.append(f"- Partial Success (Hedged): {hedged_count} ({hedged_count/total*100:.1f}%)")
-        report.append(f"- Refused: {total - full_count - hedged_count} ({(total - full_count - hedged_count)/total*100:.1f}%)")
+        report.append(
+            f"- Refused: {total - full_count - hedged_count} ({(total - full_count - hedged_count)/total*100:.1f}%)",
+        )
 
     # Save report
-    with open(output_dir / "statistics_report.md", "w") as f:
+    report_path = output_dir / "statistics_report.md"
+    with report_path.open("w") as f:
         f.write("\n".join(report))
 
-    print(f"  ✓ Saved: statistics_report.md")
+    logger.info("✓ Saved: statistics_report.md")
+
+
+def main() -> None:
+    """Main entry point for jailbreak results analysis."""
+    parser = argparse.ArgumentParser(description="Analyse and visualise jailbreak testing results")
+    parser.add_argument(
+        "result_file",
+        type=str,
+        nargs="?",
+        default=None,
+        help="Path to results JSON file (default: auto-detect latest)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default=None,
+        help="Directory to save plots (default: results/figures)",
+    )
+
+    args = parser.parse_args()
+
+    # Auto-detect latest results file if not specified
+    if args.result_file is None:
+        try:
+            result_file = find_latest_results()
+            logger.info(f"Auto-detected latest results file: {result_file.name}\n")
+        except FileNotFoundError:
+            logger.exception("No results files found")
+            return
+    else:
+        result_file = Path(args.result_file)
+        if not result_file.exists():
+            logger.error(f"Error: Result file not found: {result_file}")
+            return
+
+    # Set output directory
+    output_dir = Path(args.output_dir) if args.output_dir else SCRIPT_DIR / "results" / "figures"
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Also set analysis directory
+    analysis_dir = SCRIPT_DIR / "results" / "analysis"
+    analysis_dir.mkdir(parents=True, exist_ok=True)
+
+    logger.info(f"\nAnalysing results from: {result_file}")
+    logger.info(f"Output directory: {output_dir}\n")
+
+    # Load and process results
+    results = load_results(result_file)
+    df = create_jailbreak_summary(results)
+
+    # Load baseline results for comparison
+    baseline_df = load_baseline_results()
+
+    logger.info(f"Loaded {len(df)} valid results\n")
+
+    # Generate visualizations
+    logger.info("Generating visualizations:")
+    plot_baseline_vs_jailbreak_comparison(df, baseline_df, output_dir)
+    plot_attack_type_effectiveness(df, output_dir)
+    plot_model_vulnerability_heatmap(df, output_dir)
+    plot_category_jailbreak_rates(df, output_dir)
+    plot_radar_charts(df, output_dir)
+    generate_statistics_report(df, analysis_dir)
+
+    logger.info(f"\n{'='*60}")
+    logger.info("Analysis complete!")
+    logger.info(f"Figures saved to: {output_dir}")
+    logger.info(f"Analysis saved to: {analysis_dir}")
+    logger.info(f"{'='*60}\n")
 
 
 if __name__ == "__main__":

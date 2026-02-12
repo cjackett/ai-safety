@@ -1,3 +1,4 @@
+# ruff: noqa: INP001
 """
 Complete safety pipeline orchestrating all guardrail layers.
 
@@ -6,12 +7,12 @@ Implements defense-in-depth: access control → input guardrails → model → o
 
 import time
 import uuid
-import yaml
-import ollama
-from typing import Dict, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, cast
 
+import ollama
+import yaml
 from access_control import AccessControl
 from input_guardrails import InputGuardrails
 from output_guardrails import OutputGuardrails
@@ -20,22 +21,19 @@ from output_guardrails import OutputGuardrails
 @dataclass
 class Response:
     """Pipeline response."""
+
     success: bool
     content: str
     request_id: str
-    blocked_at: Optional[str] = None
+    blocked_at: str | None = None
     reason: str = ""
-    metadata: Dict = None
-
-    def __post_init__(self):
-        if self.metadata is None:
-            self.metadata = {}
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class SafetyPipeline:
     """Complete inference pipeline with all safety layers."""
 
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: str) -> None:
         """
         Initialize safety pipeline from config file.
 
@@ -53,12 +51,12 @@ class SafetyPipeline:
         self.model_config = self.config.get("model", {})
         self.default_model = self.model_config.get("default_model", "llama3.2:3b")
 
-    def _load_config(self, config_path: str) -> Dict:
+    def _load_config(self, config_path: str) -> dict[str, Any]:
         """Load YAML configuration."""
-        with open(config_path, 'r') as f:
-            return yaml.safe_load(f)
+        with Path(config_path).open(encoding="utf-8") as f:
+            return cast("dict[str, Any]", yaml.safe_load(f))
 
-    def process_request(self, api_key: str, prompt: str, model: Optional[str] = None) -> Response:
+    def process_request(self, api_key: str, prompt: str, model: str | None = None) -> Response:
         """
         Process inference request through all safety layers.
 
@@ -91,19 +89,20 @@ class SafetyPipeline:
                     content="",
                     request_id=request_id,
                     blocked_at="access_control",
-                    reason=auth_result.reason
+                    reason=auth_result.reason,
                 )
 
             # Layer 2: Input Guardrails
             input_check = self.input_guardrails.check_prompt(prompt)
 
             if input_check.verdict == "BLOCK":
+                blocked_by = input_check.blocked_by or "unknown"
                 self.access_control.audit_logger.log_blocked_request(
                     request_id=request_id,
                     user_tier=auth_result.user_tier,
                     prompt_hash=str(hash(prompt)),
-                    blocked_by=input_check.blocked_by,
-                    confidence=input_check.confidence
+                    blocked_by=blocked_by,
+                    confidence=input_check.confidence,
                 )
 
                 return Response(
@@ -113,9 +112,9 @@ class SafetyPipeline:
                     blocked_at="input_guardrails",
                     reason=input_check.reason,
                     metadata={
-                        "blocked_by": input_check.blocked_by,
-                        "confidence": input_check.confidence
-                    }
+                        "blocked_by": blocked_by,
+                        "confidence": input_check.confidence,
+                    },
                 )
 
             # Use sanitized prompt if available
@@ -128,19 +127,19 @@ class SafetyPipeline:
             # Layer 4: Output Guardrails
             output_check = self.output_guardrails.validate_response(
                 response=model_response,
-                prompt=safe_prompt
+                prompt=safe_prompt,
             )
 
             if output_check.verdict == "BLOCK":
                 self.access_control.audit_logger.log_harmful_output(
                     request_id=request_id,
                     user_tier=auth_result.user_tier,
-                    violations=output_check.violations
+                    violations=output_check.violations,
                 )
 
                 return Response(
                     success=False,
-                    content=output_check.filtered_response,  # Safe refusal message
+                    content=output_check.filtered_response or "",  # Safe refusal message
                     request_id=request_id,
                     blocked_at="output_guardrails",
                     reason="Generated content violates safety policies",
@@ -149,24 +148,25 @@ class SafetyPipeline:
                         "output_compliance_type": output_check.compliance_type,
                         "output_compliance_confidence": output_check.compliance_confidence,
                         "output_classifier_votes": output_check.classifier_votes,
-                        "output_classifier_reasoning": output_check.classifier_reasoning
-                    }
+                        "output_classifier_reasoning": output_check.classifier_reasoning,
+                    },
                 )
 
             # Layer 5: Audit Logging
             latency = time.time() - start_time
+            filtered_response = output_check.filtered_response or ""
             self.access_control.audit_logger.log_successful_request(
                 request_id=request_id,
                 user_tier=auth_result.user_tier,
                 prompt_length=len(prompt),
-                response_length=len(output_check.filtered_response),
-                latency=latency
+                response_length=len(filtered_response),
+                latency=latency,
             )
 
             # Return safe response
             return Response(
                 success=True,
-                content=output_check.filtered_response,
+                content=filtered_response,
                 request_id=request_id,
                 metadata={
                     "latency_ms": latency * 1000,
@@ -177,18 +177,18 @@ class SafetyPipeline:
                     "output_compliance_type": output_check.compliance_type,
                     "output_compliance_confidence": output_check.compliance_confidence,
                     "output_classifier_votes": output_check.classifier_votes,
-                    "output_classifier_reasoning": output_check.classifier_reasoning
-                }
+                    "output_classifier_reasoning": output_check.classifier_reasoning,
+                },
             )
 
-        except Exception as e:
-            self.access_control.audit_logger.log_error(request_id, str(e))
+        except (RuntimeError, ValueError, OSError) as err:
+            self.access_control.audit_logger.log_error(request_id, str(err))
             return Response(
                 success=False,
                 content="",
                 request_id=request_id,
                 blocked_at="error",
-                reason=f"Internal error: {str(e)}"
+                reason=f"Internal error: {err!s}",
             )
 
     def _generate_response(self, prompt: str, model: str) -> str:
@@ -199,12 +199,13 @@ class SafetyPipeline:
                 prompt=prompt,
                 options={
                     "temperature": self.model_config.get("temperature", 0.7),
-                    "num_predict": self.model_config.get("max_tokens", 2048)
-                }
+                    "num_predict": self.model_config.get("max_tokens", 2048),
+                },
             )
-            return result["response"]
-        except Exception as e:
-            raise RuntimeError(f"Model generation failed: {e}")
+            return cast("str", result["response"])
+        except (OSError, RuntimeError, ValueError) as err:
+            message = f"Model generation failed: {err!s}"
+            raise RuntimeError(message) from err
 
     def create_test_user(self, user_id: str, tier: str = "research") -> str:
         """
